@@ -2,6 +2,60 @@
   (:require [clojure.test :refer :all]
             [lambda-chess.core :refer :all]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(deftest square-names-test
+  (testing "contains 64 square names"
+    (is (= 64 (count square-names)))))
+
+(deftest empty-board-test
+  (testing "contains 64 squares"
+    (is (= 64 (count empty-board)))))
+
+(deftest white-pawn-moves-test
+  (testing "pawn moves from a2"
+    (is (= [:a3 :a4] (white-pawn-moves :a2))))
+  (testing "pawn moves from b4"
+    (is (= [:b5] (white-pawn-moves :b4)))))
+
+(deftest black-pawn-moves-test
+  (testing "black pawn moves from a7"
+    (is (= [:a6 :a5] (black-pawn-moves :a7))))
+  (testing "black pawn moves from a6"
+    (is (= [:a5] (black-pawn-moves :a6)))))
+
+(deftest rook-moves-test
+  (testing "rook moves from a1"
+    (is (= [:a2 :a3 :a4 :a5 :a6 :a7 :a8 :b1 :c1 :d1 :e1 :f1 :g1 :h1] (rook-moves :a1))))
+  (testing "rook moves from d4"
+    (is (= [:d1 :d2 :d3 :d5 :d6 :d7 :d8 :a4 :b4 :c4 :e4 :f4 :g4 :h4] (rook-moves :d4)))))
+
+(deftest abs-test
+  (testing "our abs func"
+    (is (= 1 (abs -1))))
+  (testing "our abs func"
+    (is (= 1 (abs 1)))))
+
+(deftest bishop-moves-test
+  (testing "testing bishop moves from a5"
+    (is (= [:b4 :b6 :c3 :c7 :d2 :d8 :e1] (bishop-moves :a5))))
+  (testing "testing bishop moves from d4"
+    (is (= [:a1 :a7 :b2 :b6 :c3 :c5 :e3 :e5 :f2 :f6 :g1 :g7 :h8] (bishop-moves :d4)))))
+
+(deftest queen-moves-test
+  (testing "testing queen moves from a1"
+    (is (= [:b2 :c3 :d4 :e5 :f6 :g7 :h8 :a2 :a3 :a4 :a5 :a6 :a7 :a8 :b1 :c1 :d1 :e1 :f1 :g1 :h1]
+           (queen-moves :a1))))
+  (testing "testing queen moves from f3"
+    (is (= [:a8 :b7 :c6 :d1 :d5 :e2 :e4 :g2 :g4 :h1 :h5 :f1 :f2 :f4 :f5 :f6 :f7 :f8 :a3 :b3 :c3 :d3 :e3 :g3 :h3]
+           (queen-moves :f3)))))
+
+(deftest king-moves-test
+  (testing "testing king moves from a3"
+    (is (= [:a2 :a4 :b2 :b3 :b4] (king-moves :a3))))
+  (testing "testing king moves from d4"
+    (is (= [:c3 :c4 :c5 :d3 :d5 :e3 :e4 :e5] (king-moves :d4)))))
+
+(deftest knight-moves-test
+  (testing "testing knight moves from a1"
+    (is (= [:b3 :c2] (knight-moves :a1))))
+  (testing "testing knight moves from d4"
+    (is (= [:b3 :b5 :c2 :c6 :e2 :e6 :f3 :f5] (knight-moves :d4)))))
