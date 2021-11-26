@@ -123,6 +123,23 @@
                             (and (= 1 (- index-col (.indexOf col-names (col %))))
                                  (= -1 (- index-row (.indexOf row-names (row %)))))) true false)
                      square-names)
-        possible-captures (filter #(if (= nil (% board)) false true) cuts)
+        possible-captures (filter #(if (= nil (% board)) false true) captures)
+        possible-captures (filter #(if (= "black" (:color (:pieceColor (% board)))) true false) possible-captures)
         ]
     possible-captures))
+
+(defn white-pawn-possible-moves [square-name board]
+  (let [
+        moves (white-pawn-moves square-name)
+        possible-moves (if (= 2 (count moves))
+                         (if (empty? ((first (sort moves)) board))
+                           (if (empty? ((second (sort moves)) board))
+                             moves
+                             [(first moves)])
+                           [])
+                         (if (empty? ((first (sort moves)) board))
+                           moves
+                           []))
+        possible-moves (into [] (concat possible-moves (white-pawn-captures square-name board)))
+        ]
+    possible-moves))

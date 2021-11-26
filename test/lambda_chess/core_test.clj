@@ -1,6 +1,7 @@
 (ns lambda-chess.core-test
   (:require [clojure.test :refer :all]
-            [lambda-chess.core :refer :all]))
+            [lambda-chess.core :refer :all])
+  (:import (lambda_chess.core Piece)))
 
 (deftest square-names-test
   (testing "contains 64 square names"
@@ -59,3 +60,11 @@
     (is (= [:b3 :c2] (knight-moves :a1))))
   (testing "testing knight moves from d4"
     (is (= [:b3 :b5 :c2 :c6 :e2 :e6 :f3 :f5] (knight-moves :d4)))))
+
+(deftest white-pawn-possible-moves-test
+  (testing "testing white pawn moves from a2"
+    (is (= [:a3 :a4] (white-pawn-possible-moves :a2 empty-board))))
+  (testing "testing white pawn moves from a2, but there is our pawn on a4"
+    (is (= [:a3] (white-pawn-possible-moves :a2 (place-piece empty-board :a4 (Piece. pawn white "♙"))))))
+  (testing "testing white pawn moves from a2, but we can take black pawn on b3"
+    (is (= [:a3 :a4 :b3] (white-pawn-possible-moves :a2 (place-piece empty-board :b3 (Piece. pawn black "♟")))))))
