@@ -180,24 +180,20 @@
         index-col (.indexOf col-names (col square-name))
         index-row (.indexOf row-names (row square-name))
         ; there is my direction below
-        top-direction (filter #(if (and (= (col %) (col square-name))
-                                        (< index-row (.indexOf row-names (row %))))
-                                 true false)
+        top-direction (filter #(and (= (col %) (col square-name))
+                                    (< index-row (.indexOf row-names (row %))))
                               (rook-moves square-name))
 
-        downward-direction (filter #(if (and (= (col %) (col square-name))
-                                             (> index-row (.indexOf row-names (row %))))
-                                      true false)
+        downward-direction (filter #(and (= (col %) (col square-name))
+                                         (> index-row (.indexOf row-names (row %))))
                                    (rook-moves square-name))
 
-        left-direction (filter #(if (and (= (row %) (row square-name))
-                                         (> index-col (.indexOf col-names (col %))))
-                                  true false)
+        left-direction (filter #(and (= (row %) (row square-name))
+                                     (> index-col (.indexOf col-names (col %))))
                                (rook-moves square-name))
 
-        right-direction (filter #(if (and (= (row %) (row square-name))
-                                          (< index-col (.indexOf col-names (col %))))
-                                   true false)
+        right-direction (filter #(and (= (row %) (row square-name))
+                                      (< index-col (.indexOf col-names (col %))))
                                 (rook-moves square-name))
         ]
     {:top top-direction :downward downward-direction :left left-direction :right right-direction}))
