@@ -68,3 +68,17 @@
     (is (= [:a3] (white-pawn-possible-moves :a2 (place-piece empty-board :a4 (Piece. pawn white "♙"))))))
   (testing "testing white pawn moves from a2, but we can take black pawn on b3"
     (is (= [:a3 :a4 :b3] (white-pawn-possible-moves :a2 (place-piece empty-board :b3 (Piece. pawn black "♟")))))))
+
+(deftest black-pawn-captures-test
+  (testing "testing black pawn captures from a7"
+    (is (= [:b6] (black-pawn-captures :a7 (place-piece empty-board :b6 (Piece. pawn white "♙")))))))
+
+(deftest black-pawn-possible-moves-test
+  (testing "testing black pawn moves from a7"
+    (is (= [:a6 :a5] (black-pawn-possible-moves :a7 empty-board))))
+  (testing "testing black pawn moves from a7, but there is our pawn on a5"
+    (if [:a6] (black-pawn-possible-moves :a7 (place-piece empty-board :a5 "♟")))))
+
+(deftest rook-directions-test
+  (testing "testing rook directions from d4"
+    (is (= {:top [:d5 :d6 :d7 :d8] :downward [:d3 :d2 :d1] :left [:c4 :b4 :a4] :right [:e4 :f4 :g4 :h4]} (rook-directions :d4)))))

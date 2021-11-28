@@ -128,6 +128,21 @@
         ]
     possible-captures))
 
+(defn black-pawn-captures [square-name board]
+  (let [
+        index-col (.indexOf col-names (col square-name))
+        index-row (.indexOf row-names (row square-name))
+        captures (filter #(if (or
+                                (and (= -1 (- index-col (.indexOf col-names (col %))))
+                                     (= 1 (- index-row (.indexOf row-names (row %)))))
+                                (and (= 1 (- index-col (.indexOf col-names (col %))))
+                                     (= 1 (- index-row (.indexOf row-names (row %)))))) true false)
+                         square-names)
+        possible-captures (filter #(if (= nil (% board)) false true) captures)
+        possible-captures (filter #(if (= "white" (:color (:pieceColor (% board)))) true false) possible-captures)
+        ]
+    possible-captures))
+
 (defn white-pawn-possible-moves [square-name board]
   (let [
         moves (white-pawn-moves square-name)
@@ -143,3 +158,120 @@
         possible-moves (into [] (concat possible-moves (white-pawn-captures square-name board)))
         ]
     possible-moves))
+
+(defn black-pawn-possible-moves [square-name board]
+  (let [
+        moves (black-pawn-moves square-name)
+        possible-moves (if (= 2 (count moves))
+                         (if (empty? ((second (sort moves)) board))
+                           (if (empty? ((first (sort moves)) board))
+                             moves
+                             [(first moves)])
+                           [])
+                         (if (empty? ((second (sort moves)) board))
+                           moves
+                           []))
+        possible-moves (into [] (concat possible-moves (black-pawn-captures square-name board)))
+        ]
+    possible-moves))
+
+(defn rook-directions [square-name]
+  (let [
+        index-col (.indexOf col-names (col square-name))
+        index-row (.indexOf row-names (row square-name))
+        ; there is my direction below
+        top-direction (filter #(if (and (= (col %) (col square-name))
+                                        (< index-row (.indexOf row-names (row %))))
+                                 true false)
+                              (rook-moves square-name))
+
+        downward-direction (filter #(if (and (= (col %) (col square-name))
+                                             (> index-row (.indexOf row-names (row %))))
+                                      true false)
+                                   (rook-moves square-name))
+
+        left-direction (filter #(if (and (= (row %) (row square-name))
+                                         (> index-col (.indexOf col-names (col %))))
+                                  true false)
+                               (rook-moves square-name))
+
+        right-direction (filter #(if (and (= (row %) (row square-name))
+                                          (< index-col (.indexOf col-names (col %))))
+                                   true false)
+                                (rook-moves square-name))
+        ]
+    {:top top-direction :downward downward-direction :left left-direction :right right-direction}))
+
+(defn white-rook-possible-moves [square-name board]
+  (let [
+        directions (rook-directions square-name)
+        top (:top directions)
+        downward (:downward directions)
+        left (:left directions)
+        right (:right directions)
+        top-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] top))
+        top-moves (if (= 8 (row (last top-moves)))
+                    top-moves
+                    (if (= "white" (:color (:pieceColor ((nth top (inc (.indexOf top-moves (last top-moves)))) board))))
+                      top-moves
+                      (conj top-moves (nth top (inc (.indexOf top-moves (last top-moves)))))))
+
+        downward-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] downward))
+        downward-moves (if (= 1 (row (first downward-moves)))
+                         downward-moves
+                         (if (= "white" (:color (:pieceColor ((nth downward (inc (.indexOf downward-moves (last downward-moves)))) board))))
+                           downward-moves
+                           (conj downward-moves (nth downward (inc (.indexOf downward-moves (last downward-moves)))))))
+
+        left-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] left))
+        left-moves (if (= "a" (col (first left-moves)))
+                     left-moves
+                     (if (= "white" (:color (:pieceColor ((nth left (inc (.indexOf left-moves (last left-moves)))) board))))
+                       left-moves
+                       (conj left-moves (nth left (inc (.indexOf left-moves (last left-moves)))))))
+
+        right-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] right))
+        right-moves (if (= "h" (col (last right-moves)))
+                      right-moves
+                      (if (= "white" (:color (:pieceColor ((nth right (inc (.indexOf right-moves (last right-moves)))) board))))
+                        right-moves
+                        (conj right-moves (nth right (inc (.indexOf right-moves (last right-moves)))))))
+        ]
+    (into [] (concat top-moves downward-moves left-moves right-moves))))
+
+(defn black-rook-possible-moves [square-name board]
+  (let [
+        directions (rook-directions square-name)
+        top (:top directions)
+        downward (:downward directions)
+        left (:left directions)
+        right (:right directions)
+        top-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] top))
+        top-moves (if (= 8 (row (last top-moves)))
+                    top-moves
+                    (if (= "black" (:color (:pieceColor ((nth top (inc (.indexOf top-moves (last top-moves)))) board))))
+                      top-moves
+                      (conj top-moves (nth top (inc (.indexOf top-moves (last top-moves)))))))
+
+        downward-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] downward))
+        downward-moves (if (= 1 (row (first downward-moves)))
+                         downward-moves
+                         (if (= "black" (:color (:pieceColor ((nth downward (inc (.indexOf downward-moves (last downward-moves)))) board))))
+                           downward-moves
+                           (conj downward-moves (nth downward (inc (.indexOf downward-moves (last downward-moves)))))))
+
+        left-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] left))
+        left-moves (if (= "a" (col (first left-moves)))
+                     left-moves
+                     (if (= "black" (:color (:pieceColor ((nth left (inc (.indexOf left-moves (last left-moves)))) board))))
+                       left-moves
+                       (conj left-moves (nth left (inc (.indexOf left-moves (last left-moves)))))))
+
+        right-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] right))
+        right-moves (if (= "h" (col (last right-moves)))
+                      right-moves
+                      (if (= "black" (:color (:pieceColor ((nth right (inc (.indexOf right-moves (last right-moves)))) board))))
+                        right-moves
+                        (conj right-moves (nth right (inc (.indexOf right-moves (last right-moves)))))))
+        ]
+    (into [] (concat top-moves downward-moves left-moves right-moves))))
