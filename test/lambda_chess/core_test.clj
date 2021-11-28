@@ -81,4 +81,16 @@
 
 (deftest rook-directions-test
   (testing "testing rook directions from d4"
-    (is (= {:top [:d5 :d6 :d7 :d8] :downward [:d3 :d2 :d1] :left [:c4 :b4 :a4] :right [:e4 :f4 :g4 :h4]} (rook-directions :d4)))))
+    (is (= {:top [:d5 :d6 :d7 :d8] :downward [:d1 :d2 :d3] :left [:a4 :b4 :c4] :right [:e4 :f4 :g4 :h4]} (rook-directions :d4)))))
+
+(deftest white-rook-possible-moves-test
+  (testing "testing white rook possible moves from d4"
+    (is  (= [:d5 :d6 :d7 :d8 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4] (white-rook-possible-moves :d4 empty-board))))
+  (testing "testing white rook possible moves from d4 but there is white pawn on d6"
+    (is (= [:d5 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4] (white-rook-possible-moves :d4 (place-piece empty-board :d6 (Piece. pawn white "♙")))))))
+
+(deftest black-rook-possible-moves-test
+  (testing "testing black rook possible moves from d4"
+    (is  (= [:d5 :d6 :d7 :d8 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4] (black-rook-possible-moves :d4 empty-board))))
+  (testing "testing black rook possible moves from d4 but there is white pawn on d6"
+    (is (= [:d6 :d5 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4] (black-rook-possible-moves :d4 (place-piece empty-board :d6 (Piece. pawn white "♙")))))))
