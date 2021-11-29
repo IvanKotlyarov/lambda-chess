@@ -87,10 +87,21 @@
   (testing "testing white rook possible moves from d4"
     (is  (= [:d5 :d6 :d7 :d8 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4] (white-rook-possible-moves :d4 empty-board))))
   (testing "testing white rook possible moves from d4 but there is white pawn on d6"
-    (is (= [:d5 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4] (white-rook-possible-moves :d4 (place-piece empty-board :d6 (Piece. pawn white "♙")))))))
+    (is (= [:d5 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4]
+           (white-rook-possible-moves :d4 (place-piece empty-board :d6 (Piece. pawn white "♙")))))))
 
 (deftest black-rook-possible-moves-test
   (testing "testing black rook possible moves from d4"
     (is  (= [:d5 :d6 :d7 :d8 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4] (black-rook-possible-moves :d4 empty-board))))
   (testing "testing black rook possible moves from d4 but there is white pawn on d6"
-    (is (= [:d6 :d5 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4] (black-rook-possible-moves :d4 (place-piece empty-board :d6 (Piece. pawn white "♙")))))))
+    (is (= [:d6 :d5 :d1 :d2 :d3 :a4 :b4 :c4 :e4 :f4 :g4 :h4]
+           (black-rook-possible-moves :d4 (place-piece empty-board :d6 (Piece. pawn white "♙")))))))
+
+(deftest bishop-directions-test
+  (testing "testing bishop directions"
+    (is (= {:top-right [:e5 :f6 :g7 :h8] :top-left [:a7 :b6 :c5] :down-right [:e3 :f2 :g1] :down-left [:a1 :b2 :c3]} (bishop-directions :d4)))))
+
+(deftest bishop-possible-moves-test
+  (testing "white bishop possible moves from d4, but there is a black pawn on g7"
+    (is (= [:e5 :f6 :g7 :a7 :b6 :c5 :e3 :f2 :g1 :a1 :b2 :c3]
+           (bishop-possible-moves :d4 (place-piece empty-board :g7 (Piece. pawn black "♟")) white)))))

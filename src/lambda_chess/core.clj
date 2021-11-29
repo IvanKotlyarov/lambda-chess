@@ -237,3 +237,52 @@
 
 (defn white-rook-possible-moves [square-name board] (rook-possible-moves square-name board "white"))
 (defn black-rook-possible-moves [square-name board] (rook-possible-moves square-name board "black"))
+
+(defn bishop-directions [square-name]
+  (let [
+        index-col (.indexOf col-names (col square-name))
+        index-row (.indexOf row-names (row square-name))
+        top-right (filter #(and (< index-col (.indexOf col-names (col %)))
+                                (< index-row (.indexOf row-names (row %))))
+                          (bishop-moves square-name))
+        top-left (filter #(and (> index-col (.indexOf col-names (col %)))
+                               (< index-row (.indexOf row-names (row %))))
+                         (bishop-moves square-name))
+        down-right (filter #(and (< index-col (.indexOf col-names (col %)))
+                                 (> index-row (.indexOf row-names (row %))))
+                           (bishop-moves square-name))
+        down-left (filter #(and (> index-col (.indexOf col-names (col %)))
+                                (> index-row (.indexOf row-names (row %))))
+                          (bishop-moves square-name))
+
+        ]
+    {:top-right top-right :top-left top-left :down-right down-right :down-left down-left}))
+
+(defn bishop-possible-moves [square-name board color]
+  (let [
+        directions (bishop-directions square-name)
+        top-right (:top-right directions)
+        top-left (:top-left directions)
+        down-right (:down-right directions)
+        down-left (:down-left directions)
+        top-right (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+                                                                 (reduced (conj % %2))
+                                                                 (reduced %)))
+                          [] top-right)
+
+        top-left (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+                                                                (reduced (conj % %2))
+                                                                (reduced %)))
+                         [] top-left)
+
+        down-right (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+                                                                  (reduced (conj % %2))
+                                                                  (reduced %)))
+                           [] down-right)
+
+        down-left (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+                                                                 (reduced (conj % %2))
+                                                                 (reduced %)))
+                          [] down-left)
+        ]
+    (into [] (concat top-right top-left down-right down-left))))
