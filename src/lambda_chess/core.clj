@@ -202,36 +202,28 @@
   (let [
         directions (rook-directions square-name)
         top (:top directions)
-        downward (:downward directions)
-        left (:left directions)
+        downward (reverse (sort (:downward directions)))
+        left (reverse (sort (:left directions)))
         right (:right directions)
-        top-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] top))
-        top-moves (if (= 8 (row (last top-moves)))
-                    top-moves
-                    (if (= color (:color (:pieceColor ((nth top (inc (.indexOf top-moves (last top-moves)))) board))))
-                      top-moves
-                      (conj top-moves (nth top (inc (.indexOf top-moves (last top-moves)))))))
+        top-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+                                                                 (reduced (conj % %2))
+                                                                 (reduced %)))
+                          [] top)
 
-        downward-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] downward))
-        downward-moves (if (= 1 (row (first downward-moves)))
-                         downward-moves
-                         (if (= color (:color (:pieceColor ((nth downward (inc (.indexOf downward-moves (last downward-moves)))) board))))
-                           downward-moves
-                           (conj downward-moves (nth downward (inc (.indexOf downward-moves (last downward-moves)))))))
+        downward-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+                                                                      (reduced (conj % %2))
+                                                                      (reduced %)))
+                               [] downward)
 
-        left-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] left))
-        left-moves (if (= "a" (col (first left-moves)))
-                     left-moves
-                     (if (= color (:color (:pieceColor ((nth left (inc (.indexOf left-moves (last left-moves)))) board))))
-                       left-moves
-                       (conj left-moves (nth left (inc (.indexOf left-moves (last left-moves)))))))
+        left-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+                                                                  (reduced (conj % %2))
+                                                                  (reduced %)))
+                           [] left)
 
-        right-moves (sort (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] right))
-        right-moves (if (= "h" (col (last right-moves)))
-                      right-moves
-                      (if (= color (:color (:pieceColor ((nth right (inc (.indexOf right-moves (last right-moves)))) board))))
-                        right-moves
-                        (conj right-moves (nth right (inc (.indexOf right-moves (last right-moves)))))))
+        right-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+                                                                   (reduced (conj % %2))
+                                                                   (reduced %)))
+                            [] right)
         ]
     (into [] (concat top-moves downward-moves left-moves right-moves))))
 
@@ -280,7 +272,7 @@
                                                                   (reduced %)))
                            [] down-right)
 
-        down-left (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+        down-left (reduce #(if (empty? (%2 board)) (conj % %2) (if (= color (:color (:pieceColor (%2 board))))
                                                                  (reduced (conj % %2))
                                                                  (reduced %)))
                           [] down-left)
