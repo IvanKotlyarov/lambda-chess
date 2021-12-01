@@ -198,37 +198,37 @@
         ]
     {:top top-direction :downward downward-direction :left left-direction :right right-direction}))
 
-(defn rook-possible-moves [square-name board color]
+(defn rook-possible-moves [square-name board ^PieceColor color]
   (let [
         directions (rook-directions square-name)
         top (:top directions)
         downward (reverse (sort (:downward directions)))
         left (reverse (sort (:left directions)))
         right (:right directions)
-        top-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+        top-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                  (reduced (conj % %2))
                                                                  (reduced %)))
                           [] top)
 
-        downward-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+        downward-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                       (reduced (conj % %2))
                                                                       (reduced %)))
                                [] downward)
 
-        left-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+        left-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                   (reduced (conj % %2))
                                                                   (reduced %)))
                            [] left)
 
-        right-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+        right-moves (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                    (reduced (conj % %2))
                                                                    (reduced %)))
                             [] right)
         ]
     (into [] (concat top-moves downward-moves left-moves right-moves))))
 
-(defn white-rook-possible-moves [square-name board] (rook-possible-moves square-name board "white"))
-(defn black-rook-possible-moves [square-name board] (rook-possible-moves square-name board "black"))
+(defn white-rook-possible-moves [square-name board] (rook-possible-moves square-name board white))
+(defn black-rook-possible-moves [square-name board] (rook-possible-moves square-name board black))
 
 (defn bishop-directions [square-name]
   (let [
@@ -250,31 +250,35 @@
         ]
     {:top-right top-right :top-left top-left :down-right down-right :down-left down-left}))
 
-(defn bishop-possible-moves [square-name board color]
+(defn bishop-possible-moves [square-name board ^PieceColor color]
   (let [
         directions (bishop-directions square-name)
         top-right (:top-right directions)
         top-left (:top-left directions)
         down-right (:down-right directions)
         down-left (:down-left directions)
-        top-right (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+
+        top-right (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                  (reduced (conj % %2))
                                                                  (reduced %)))
                           [] top-right)
 
-        top-left (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+        top-left (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                 (reduced (conj % %2))
                                                                 (reduced %)))
                          [] top-left)
 
-        down-right (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:color (:pieceColor (%2 board))))
+        down-right (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                   (reduced (conj % %2))
                                                                   (reduced %)))
                            [] down-right)
 
-        down-left (reduce #(if (empty? (%2 board)) (conj % %2) (if (= color (:color (:pieceColor (%2 board))))
+        down-left (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                  (reduced (conj % %2))
                                                                  (reduced %)))
                           [] down-left)
         ]
     (into [] (concat top-right top-left down-right down-left))))
+
+(defn queen-possible-moves [square-name board color]
+  (into [] (concat (rook-possible-moves square-name board color) (bishop-possible-moves square-name board color))))
