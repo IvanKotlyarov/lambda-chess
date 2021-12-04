@@ -29,6 +29,11 @@
 (defn abs [a]
   (max a (* -1 a)))
 
+(defn other-color [^PieceColor color]
+  (if (= white color)
+    black
+    white))
+
 (defn generate-empty-board []
   (reduce (fn [board square-name] (assoc board square-name nil)) {} square-names))
 
@@ -175,6 +180,11 @@
         ]
     possible-moves))
 
+(defn pawn-possible-moves [square-name board ^PieceColor color]
+  (if (= color white)
+    (white-pawn-possible-moves square-name board)
+    (black-pawn-possible-moves square-name board)))
+
 (defn rook-directions [square-name]
   (let [
         index-col (.indexOf col-names (col square-name))
@@ -282,3 +292,28 @@
 
 (defn queen-possible-moves [square-name board color]
   (into [] (concat (rook-possible-moves square-name board color) (bishop-possible-moves square-name board color))))
+
+(defn other-pieces-squares [board ^PieceColor color]
+  (filter #(and (not (empty? (% board)))
+                (not= color (:pieceColor (% board))))
+          (keys board)))
+
+(defn possible-moves [square-name board ^PieceColor color]
+  (let [
+        piece (str (:type (:pieceType (square-name board))))]
+
+    ((resolve (symbol (str "lambda-chess.core/" piece "-possible-moves"))) square-name board color)))
+
+(defn king-possible-moves [square-name board color]
+  (let [
+        other-pieces (other-pieces-squares board (other-color color))
+        other-pieces-captures (set (flatten (reduce #(conj % (possible-moves %2 board (other-color color))) [] other-pieces)))
+        moves (filter #(if (and (not (contains? other-pieces-captures %))
+                                (or (empty? (% board))
+                                  (not= color (:pieceColor (% board)))))
+                         true
+                         false)
+                      (king-moves square-name))
+        ]
+    moves)
+  )

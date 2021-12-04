@@ -121,3 +121,11 @@
   (testing "white queen possible moves, but there is our pawn on d4"
     (is (= [:a2 :a3 :a4 :a5 :a6 :a7 :a8 :b1 :c1 :d1 :e1 :f1 :g1 :h1 :b2 :c3]
            (queen-possible-moves :a1 (place-piece empty-board :d4 (Piece. pawn white "p")) white)))))
+
+(deftest possible-moves-test
+  (testing "possible moves"
+    (is (= [:b2 :c3 :d4 :e5 :f6 :g7 :h8] (possible-moves :a1 (place-piece empty-board :a1 (Piece. bishop white "b")) white)))))
+
+(deftest king-possible-moves-test
+  (testing "testing king possible moves, but there is our rook on a2"
+    (is (= [:b1 (king-possible-moves :a1 (place-piece empty-board :a2 (Piece. rook white "R")) white)]))))
