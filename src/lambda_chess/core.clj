@@ -26,6 +26,14 @@
     (fn [[col row]] (keyword (str col row))) (combo/cartesian-product col-names row-names)))
 (def square-names (generate-square-names))
 
+(def start-game-state {:white-queen-side-castling true
+                       :white-king-side-castling true
+                       :black-queen-side-castling true
+                       :black-king-side-castling true})
+
+(defn make-game-state [previous key value]
+  (assoc previous key value))
+
 (defn abs [a]
   (max a (* -1 a)))
 
@@ -295,7 +303,7 @@
 
 (defn other-pieces-squares [board ^PieceColor color]
   (filter #(and (not (empty? (% board)))
-                (not= color (:pieceColor (% board))))
+                (= color (:pieceColor (% board))))
           (keys board)))
 
 (defn possible-moves [square-name board ^PieceColor color]
@@ -314,6 +322,23 @@
                          true
                          false)
                       (king-moves square-name))
+        ]
+    moves)
+  )
+(defn white-castling [board game-state]
+  (let [
+        other-pieces (other-pieces-squares board black)
+        other-pieces-captures (set (flatten (reduce #(conj % (possible-moves %2 board black)) [ other-pieces])))
+
+        moves (if (= 3 (count (filter #(and (not (contains? other-pieces-captures %))
+                                            (not= white (:pieceColor (% board)))
+                                            (:white-queen-side-castling game-state)) [:b1 :c1 :d1])))
+                [:c1])
+        _ (println moves)
+        moves (if (= 2 (count (filter #(and (not (contains? other-pieces-captures %))
+                                            (not= white (:pieceColor (% board))))
+                                      [:f1 :g1])))
+                (conj moves :g1))
         ]
     moves)
   )

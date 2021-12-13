@@ -129,3 +129,7 @@
 (deftest king-possible-moves-test
   (testing "testing king possible moves, but there is our rook on a2"
     (is (= [:b1 (king-possible-moves :a1 (place-piece empty-board :a2 (Piece. rook white "R")) white)]))))
+
+(deftest white-castling-test
+  (testing "testing can white castling"
+    (is (= [:c1 :g1] (white-castling (place-piece empty-board :e1 (Piece. king white "K")) start-game-state)))))
