@@ -328,17 +328,28 @@
 (defn white-castling [board game-state]
   (let [
         other-pieces (other-pieces-squares board black)
-        other-pieces-captures (set (flatten (reduce #(conj % (possible-moves %2 board black)) [ other-pieces])))
+        other-pieces-captures (set (flatten (reduce #(conj % (possible-moves %2 board black)) [other-pieces])))
 
         moves (if (= 3 (count (filter #(and (not (contains? other-pieces-captures %))
                                             (not= white (:pieceColor (% board)))
                                             (:white-queen-side-castling game-state)) [:b1 :c1 :d1])))
                 [:c1])
-        _ (println moves)
         moves (if (= 2 (count (filter #(and (not (contains? other-pieces-captures %))
                                             (not= white (:pieceColor (% board))))
                                       [:f1 :g1])))
-                (conj moves :g1))
-        ]
-    moves)
-  )
+                (conj moves :g1))]
+    moves))
+(defn black-castling [board game-state]
+  (let [
+        other-pieces (other-pieces-squares board white)
+        other-pieces-captures (set (flatten (reduce #(conj % (possible-moves %2 white black)) [other-pieces])))
+
+        moves (if (= 3 (count (filter #(and (not (contains? other-pieces-captures %))
+                                            (not= black (:pieceColor (% board)))
+                                            (:white-queen-side-castling game-state)) [:b8 :c8 :d8])))
+                [:c8])
+        moves (if (= 2 (count (filter #(and (not (contains? other-pieces-captures %))
+                                            (not= black (:pieceColor (% board))))
+                                      [:f8 :g8])))
+                (conj moves :g8))]
+    moves))

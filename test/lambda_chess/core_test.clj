@@ -133,3 +133,7 @@
 (deftest white-castling-test
   (testing "testing can white castling"
     (is (= [:c1 :g1] (white-castling (place-piece empty-board :e1 (Piece. king white "K")) start-game-state)))))
+
+(deftest black-castling-test
+  (testing "testing can black castling"
+    (is (= [:c8 :g8] (black-castling (place-piece empty-board :e8 (Piece. king black "k")) start-game-state)))))
