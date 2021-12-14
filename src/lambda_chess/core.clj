@@ -58,26 +58,23 @@
 
 (defn white-pawn-moves [square-name]
   (let [
-        possible-moves []
-        col (str (get (str square-name) 1))
-        row (Character/digit (get (str square-name) 2) 10)
-        possible-moves (if (= row 2)
-            (conj possible-moves
-                              (keyword (str col (inc row)))
-                              (keyword (str col (+ 2 row))))
-            (conj possible-moves (keyword (str col (inc row)))))]
+        c (col square-name)
+        r (row square-name)
+        possible-moves [(keyword (str c (inc r)))]
+        possible-moves (if (= r 2)
+                         (conj possible-moves (keyword (str c (+ 2 r))))
+                         possible-moves)]
     possible-moves))
 
 (defn black-pawn-moves [square-name]
   (let [
-        possible-moves []
-        col (str (get (str square-name) 1))
-        row (Character/digit (get (str square-name) 2) 10)
-        possible-moves (if (= row 7)
+        c (col square-name)
+        r (row square-name)
+        possible-moves [(keyword (str c (dec r)))]
+        possible-moves (if (= r 7)
                          (conj possible-moves
-                               (keyword (str col (dec row)))
-                               (keyword (str col (- row 2))))
-                         (conj possible-moves (keyword (str col (dec row)))))]
+                               (keyword (str c (- r 2))))
+                         possible-moves)]
     possible-moves))
 
 (defn rook-moves [square-name]
@@ -339,6 +336,7 @@
                                       [:f1 :g1])))
                 (conj moves :g1))]
     moves))
+
 (defn black-castling [board game-state]
   (let [
         other-pieces (other-pieces-squares board white)
@@ -353,3 +351,4 @@
                                       [:f8 :g8])))
                 (conj moves :g8))]
     moves))
+
