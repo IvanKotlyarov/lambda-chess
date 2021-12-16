@@ -137,3 +137,7 @@
 (deftest black-castling-test
   (testing "testing can black castling"
     (is (= [:c8 :g8] (black-castling (place-piece empty-board :e8 (Piece. king black "k")) start-game-state)))))
+
+(deftest pawn-promotion-test
+  (testing "testing pawn promotion"
+    (is (= (:a8 (pawn-promotion :a8 empty-board (Piece. rook white "R"))) (Piece. rook white "R")))))

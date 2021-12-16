@@ -335,3 +335,6 @@
                                       [:f8 :g8])))
                 (conj moves :g8))]
     moves))
+
+(defn pawn-promotion [square-name board piece]
+  (assoc board square-name piece))
