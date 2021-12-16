@@ -79,47 +79,42 @@
 
 (defn rook-moves [square-name]
   (let [
-        possible-moves []
         squarescol (filter #(if (and (= (col square-name) (col %)) (not= square-name %)) true false) square-names)
         squaresrow (filter #(if (and (= (row square-name) (row %)) (not= square-name %)) true false) square-names)
-        possible-moves (into [] (concat possible-moves squarescol))
-        possible-moves (into [] (concat possible-moves squaresrow))]
+        possible-moves (into [] (concat squarescol squaresrow))]
     possible-moves))
 
 (defn bishop-moves [square-name]
   (let [
         index-col (.indexOf col-names (col square-name))
         index-row (.indexOf row-names (row square-name))
-        possible-moves (filter #(if (and (=  (abs (- index-col (.indexOf col-names (col %))))
-                                             (abs (- index-row (.indexOf row-names (row %))))
-                                             )
-                                         (not= square-name %)) true false) square-names)]
+        possible-moves (filter #(and (=  (abs (- index-col (.indexOf col-names (col %))))
+                                         (abs (- index-row (.indexOf row-names (row %)))))
+                                     (not= square-name %)) square-names)]
   possible-moves))
 
 (defn queen-moves [square-name]
-  (into [] (concat (bishop-moves square-name) (rook-moves square-name)))
-  )
+  (into [] (concat (bishop-moves square-name) (rook-moves square-name))))
 
 (defn king-moves [square-name]
   (let [
         index-col (.indexOf col-names (col square-name))
         index-row (.indexOf row-names (row square-name))
-        possible-moves (filter #(if (and
-                                      (>= 1 (abs (- index-col (.indexOf col-names (col %)))))
-                                      (>= 1 (abs (- index-row (.indexOf row-names (row %)))))
-                                      (not= square-name %)) true false) square-names)]
+        possible-moves (filter #(and
+                                  (>= 1 (abs (- index-col (.indexOf col-names (col %)))))
+                                  (>= 1 (abs (- index-row (.indexOf row-names (row %)))))
+                                  (not= square-name %)) square-names)]
     possible-moves))
 
 (defn knight-moves [square-name]
   (let [
         index-col (.indexOf col-names (col square-name))
         index-row (.indexOf row-names (row square-name))
-        possible-moves (filter #(if (or
-                                      (and (= 1 (abs (- index-col (.indexOf col-names (col %)))))
-                                           (= 2 (abs (- index-row (.indexOf row-names (row %))))))
-                                      (and (= 2 (abs (- index-col (.indexOf col-names (col %)))))
-                                           (= 1 (abs (- index-row (.indexOf row-names (row %)))))))
-                                  true false)
+        possible-moves (filter #(or
+                                  (and (= 1 (abs (- index-col (.indexOf col-names (col %)))))
+                                       (= 2 (abs (- index-row (.indexOf row-names (row %))))))
+                                  (and (= 2 (abs (- index-col (.indexOf col-names (col %)))))
+                                       (= 1 (abs (- index-row (.indexOf row-names (row %)))))))
                                square-names)]
     possible-moves))
 
@@ -351,4 +346,3 @@
                                       [:f8 :g8])))
                 (conj moves :g8))]
     moves))
-
