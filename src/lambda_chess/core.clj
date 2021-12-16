@@ -122,30 +122,28 @@
   (let [
         index-col (.indexOf col-names (col square-name))
         index-row (.indexOf row-names (row square-name))
-        captures (filter #(if (or
+        captures (filter #(or
                             (and (= -1 (- index-col (.indexOf col-names (col %))))
                                  (= -1 (- index-row (.indexOf row-names (row %)))))
                             (and (= 1 (- index-col (.indexOf col-names (col %))))
-                                 (= -1 (- index-row (.indexOf row-names (row %)))))) true false)
+                                 (= -1 (- index-row (.indexOf row-names (row %))))))
                      square-names)
-        possible-captures (filter #(if (= nil (% board)) false true) captures)
-        possible-captures (filter #(if (= "black" (:color (:pieceColor (% board)))) true false) possible-captures)
-        ]
+        possible-captures (filter #(not= nil (% board)) captures)
+        possible-captures (filter #(= "black" (:color (:pieceColor (% board)))) possible-captures)]
     possible-captures))
 
 (defn black-pawn-captures [square-name board]
   (let [
         index-col (.indexOf col-names (col square-name))
         index-row (.indexOf row-names (row square-name))
-        captures (filter #(if (or
-                                (and (= -1 (- index-col (.indexOf col-names (col %))))
-                                     (= 1 (- index-row (.indexOf row-names (row %)))))
-                                (and (= 1 (- index-col (.indexOf col-names (col %))))
-                                     (= 1 (- index-row (.indexOf row-names (row %)))))) true false)
+        captures (filter #(or
+                            (and (= -1 (- index-col (.indexOf col-names (col %))))
+                                 (= 1 (- index-row (.indexOf row-names (row %)))))
+                            (and (= 1 (- index-col (.indexOf col-names (col %))))
+                                 (= 1 (- index-row (.indexOf row-names (row %))))))
                          square-names)
-        possible-captures (filter #(if (= nil (% board)) false true) captures)
-        possible-captures (filter #(if (= "white" (:color (:pieceColor (% board)))) true false) possible-captures)
-        ]
+        possible-captures (filter #(not= nil (% board)) captures)
+        possible-captures (filter #(= "white" (:color (:pieceColor (% board)))) possible-captures)]
     possible-captures))
 
 (defn white-pawn-possible-moves [square-name board]
@@ -160,8 +158,7 @@
                          (if (empty? ((first (sort moves)) board))
                            moves
                            []))
-        possible-moves (into [] (concat possible-moves (white-pawn-captures square-name board)))
-        ]
+        possible-moves (into [] (concat possible-moves (white-pawn-captures square-name board)))]
     possible-moves))
 
 (defn black-pawn-possible-moves [square-name board]
@@ -176,8 +173,7 @@
                          (if (empty? ((second (sort moves)) board))
                            moves
                            []))
-        possible-moves (into [] (concat possible-moves (black-pawn-captures square-name board)))
-        ]
+        possible-moves (into [] (concat possible-moves (black-pawn-captures square-name board)))]
     possible-moves))
 
 (defn pawn-possible-moves [square-name board ^PieceColor color]
@@ -204,8 +200,7 @@
 
         right-direction (filter #(and (= (row %) (row square-name))
                                       (< index-col (.indexOf col-names (col %))))
-                                (rook-moves square-name))
-        ]
+                                (rook-moves square-name))]
     {:top top-direction :downward downward-direction :left left-direction :right right-direction}))
 
 (defn rook-possible-moves [square-name board ^PieceColor color]
@@ -255,9 +250,7 @@
                            (bishop-moves square-name))
         down-left (filter #(and (> index-col (.indexOf col-names (col %)))
                                 (> index-row (.indexOf row-names (row %))))
-                          (bishop-moves square-name))
-
-        ]
+                          (bishop-moves square-name))]
     {:top-right top-right :top-left top-left :down-right down-right :down-left down-left}))
 
 (defn bishop-possible-moves [square-name board ^PieceColor color]
@@ -286,8 +279,7 @@
         down-left (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                  (reduced (conj % %2))
                                                                  (reduced %)))
-                          [] down-left)
-        ]
+                          [] down-left)]
     (into [] (concat top-right top-left down-right down-left))))
 
 (defn queen-possible-moves [square-name board color]
@@ -308,15 +300,12 @@
   (let [
         other-pieces (other-pieces-squares board (other-color color))
         other-pieces-captures (set (flatten (reduce #(conj % (possible-moves %2 board (other-color color))) [] other-pieces)))
-        moves (filter #(if (and (not (contains? other-pieces-captures %))
-                                (or (empty? (% board))
-                                  (not= color (:pieceColor (% board)))))
-                         true
-                         false)
-                      (king-moves square-name))
-        ]
-    moves)
-  )
+        moves (filter #(and (not (contains? other-pieces-captures %))
+                            (or (empty? (% board))
+                                (not= color (:pieceColor (% board)))))
+                      (king-moves square-name))]
+    moves))
+
 (defn white-castling [board game-state]
   (let [
         other-pieces (other-pieces-squares board black)
