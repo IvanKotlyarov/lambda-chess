@@ -15,6 +15,8 @@
 (def king (PieceType. "king"))
 (def pawn (PieceType. "pawn"))
 
+(defrecord Game [board moves game-state])
+
 (defrecord Piece [^PieceType pieceType ^PieceColor pieceColor ^String unicode])
 
 (defrecord Square [^Piece piece])
@@ -29,7 +31,9 @@
 (def start-game-state {:white-queen-side-castling true
                        :white-king-side-castling true
                        :black-queen-side-castling true
-                       :black-king-side-castling true})
+                       :black-king-side-castling true
+                       :white-en-passant false
+                       :black-en-passant false})
 
 (defn make-game-state [previous key value]
   (assoc previous key value))
@@ -46,6 +50,17 @@
   (reduce (fn [board square-name] (assoc board square-name nil)) {} square-names))
 
 (def empty-board (generate-empty-board))
+
+(def pieces {:a1 (Piece. rook white "R") :b1 (Piece. knight white "N") :c1 (Piece. rook bishop "B") :d1 (Piece. queen white "Q")
+                  :e1 (Piece. king white "K") :f1 (Piece. bishop white "b") :g1 (Piece. knight white "N") :h1 (Piece. rook white "R")
+                  :a8 (Piece. rook black "r") :b8 (Piece. knight black "n") :c8 (Piece. bishop black "b") :d8 (Piece. queen black "q")
+                  :e8 (Piece. king black "k") :f8 (Piece. bishop black "b") :g8 (Piece. knight black "n") :h8 (Piece. rook black "r")})
+
+(defn pawns [^PieceColor color]
+  (let [[r unicode] (if (= color white) [2 "P"] [7 "p"])]
+    (reduce #(assoc % (keyword (str %2 r)) (Piece. pawn color unicode)) {} col-names)))
+
+(def initial-board (merge empty-board (merge (pawns black) (pawns white) pieces)))
 
 (defn place-piece [board square piece]
   (assoc board square piece))
@@ -338,3 +353,8 @@
 
 (defn pawn-promotion [square-name board piece]
   (assoc board square-name piece))
+
+#_(defn white-en-passant [game-state]
+  )
+
+#_(defn random-agent [])

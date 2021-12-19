@@ -141,3 +141,9 @@
 (deftest pawn-promotion-test
   (testing "testing pawn promotion"
     (is (= (:a8 (pawn-promotion :a8 empty-board (Piece. rook white "R"))) (Piece. rook white "R")))))
+
+(deftest initial-board-test
+  (testing "squares count"
+    (is (= 64 (count initial-board))))
+  (testing "what is on a1"
+    (is (= (Piece. rook white "R") (:a1 initial-board)))))
