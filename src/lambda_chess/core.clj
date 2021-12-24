@@ -21,6 +21,8 @@
 
 (defrecord Square [^Piece piece])
 
+(defrecord Move [^Piece piece from to ^Piece promoted])
+
 (def col-names ["a" "b" "c" "d" "e" "f" "g" "h"])
 (def row-names [1 2 3 4 5 6 7 8])
 (defn generate-square-names []
@@ -37,6 +39,11 @@
 
 (defn make-game-state [previous key value]
   (assoc previous key value))
+
+(def start-moves-history [])
+
+(defn make-moves [from to ^Piece piece prev promoted]
+  (conj prev (Move. piece from to promoted)))
 
 (defn abs [a]
   (max a (* -1 a)))
@@ -160,6 +167,9 @@
         possible-captures (filter #(not= nil (% board)) captures)
         possible-captures (filter #(= "white" (:color (:pieceColor (% board)))) possible-captures)]
     possible-captures))
+
+(defn pawn-captures [square-name board color]
+  (if (= color black) (black-pawn-captures square-name board) (white-pawn-captures square-name board)))
 
 (defn white-pawn-possible-moves [square-name board]
   (let [
@@ -297,10 +307,13 @@
                           [] down-left)]
     (into [] (concat top-right top-left down-right down-left))))
 
-(defn queen-possible-moves [square-name board color]
+(defn knight-possible-moves [square-name board ^PieceColor color]
+  (filter #(not= color (:pieceColor (% board))) (knight-moves square-name)))
+
+(defn queen-possible-moves [square-name board ^PieceColor color]
   (into [] (concat (rook-possible-moves square-name board color) (bishop-possible-moves square-name board color))))
 
-(defn other-pieces-squares [board ^PieceColor color]
+(defn pieces-squares [board ^PieceColor color]
   (filter #(and (not (empty? (% board)))
                 (= color (:pieceColor (% board))))
           (keys board)))
@@ -311,11 +324,17 @@
 
     ((resolve (symbol (str "lambda-chess.core/" piece "-possible-moves"))) square-name board color)))
 
-(defn king-possible-moves [square-name board color]
+(defn pieces-captures [board ^PieceColor color]
   (let [
-        other-pieces (other-pieces-squares board (other-color color))
-        other-pieces-captures (set (flatten (reduce #(conj % (possible-moves %2 board (other-color color))) [] other-pieces)))
-        moves (filter #(and (not (contains? other-pieces-captures %))
+        squares (pieces-squares board color)
+        captures (set (flatten (reduce #(conj % (if (= (:pieceType (%2 board)) pawn) (pawn-captures %2 board color)
+                                                                             (possible-moves %2 board color))) [] squares)))]
+    captures))
+
+(defn king-possible-moves [square-name board ^PieceColor color]
+  (let [
+        captures (pieces-captures board color)
+        moves (filter #(and (not (contains? captures %))
                             (or (empty? (% board))
                                 (not= color (:pieceColor (% board)))))
                       (king-moves square-name))]
@@ -323,14 +342,12 @@
 
 (defn white-castling [board game-state]
   (let [
-        other-pieces (other-pieces-squares board black)
-        other-pieces-captures (set (flatten (reduce #(conj % (possible-moves %2 board black)) [other-pieces])))
-
-        moves (if (= 3 (count (filter #(and (not (contains? other-pieces-captures %))
+        captures (pieces-captures board black)
+        moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= white (:pieceColor (% board)))
                                             (:white-queen-side-castling game-state)) [:b1 :c1 :d1])))
                 [:c1])
-        moves (if (= 2 (count (filter #(and (not (contains? other-pieces-captures %))
+        moves (if (= 2 (count (filter #(and (not (contains? captures %))
                                             (not= white (:pieceColor (% board))))
                                       [:f1 :g1])))
                 (conj moves :g1))]
@@ -338,14 +355,13 @@
 
 (defn black-castling [board game-state]
   (let [
-        other-pieces (other-pieces-squares board white)
-        other-pieces-captures (set (flatten (reduce #(conj % (possible-moves %2 white black)) [other-pieces])))
+        captures (pieces-captures board white)
 
-        moves (if (= 3 (count (filter #(and (not (contains? other-pieces-captures %))
+        moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= black (:pieceColor (% board)))
                                             (:white-queen-side-castling game-state)) [:b8 :c8 :d8])))
                 [:c8])
-        moves (if (= 2 (count (filter #(and (not (contains? other-pieces-captures %))
+        moves (if (= 2 (count (filter #(and (not (contains? captures %))
                                             (not= black (:pieceColor (% board))))
                                       [:f8 :g8])))
                 (conj moves :g8))]
@@ -357,4 +373,34 @@
 #_(defn white-en-passant [game-state]
   )
 
-#_(defn random-agent [])
+(defn check? [board ^PieceColor color]
+  (let [
+        king-square (filter #(= king (:pieceType (% board))) (pieces-squares board color))
+        _ (println king-square)
+        captures (pieces-captures board (other-color color))
+        _ (println captures)
+        ]
+    (contains? captures (first king-square))))
+
+#_(defn checkmate? [board ^PieceColor color]
+  (let [
+        king-square (filter (= king (:pieceType (pieces-squares board color))))
+        other-pieces (pieces-squares board (other-color color))
+        captures (pieces-captures board color)
+        our-pieces (pieces-squares board color)
+        our-pieces-moves (set (flatten (reduce #(conj % (possible-moves %2 board color)) [] other-pieces)))
+        mate (filter #(check? board color))
+        ]))
+
+#_(defn isValidMove? [^Piece piece from to board promoted color]
+  (if (not (check? board color))
+    ))
+
+#_(defn make-move [^Piece piece from to promoted])
+
+#_(defn random-agent [^PieceColor color board game-state moves]
+  (let [
+        rand-square (rand-nth pieces-squares)
+        rand-piece (rand-square board)
+        ]
+    (make-move rand-piece rand-square (rand-nth (possible-moves rand-piece board color)) nil)))

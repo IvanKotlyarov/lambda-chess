@@ -112,7 +112,11 @@
     (is (= [:e5 :f6 :g7 :a7 :b6 :c5 :e3 :f2 :g1 :a1 :b2 :c3]
            (bishop-possible-moves :d4 (place-piece empty-board :g7 (Piece. pawn black "♟")) white))))
   (testing "white bishop possible moves from a1, but there is our pawn on d4"
-    (is (= [:b2 :c3] (bishop-possible-moves :a1 (place-piece empty-board :d4 (Piece. pawn white "p")) white)))))
+    (is (= [:b2 :c3] (bishop-possible-moves :a1 (place-piece empty-board :d4 (Piece. pawn white "P")) white)))))
+
+(deftest knight-possible-moves-test
+  (testing "white knight moves from d4, but there is a white pawn on c2"
+    (is (= [:b3 :b5 :c6 :e2 :e6 :f3 :f5] (knight-possible-moves :d4 (place-piece empty-board :c2 (Piece. pawn white "P")) white)))))
 
 (deftest queen-possible-moves-test
   (testing "white queen possible moves from a1"
@@ -147,3 +151,17 @@
     (is (= 64 (count initial-board))))
   (testing "what is on a1"
     (is (= (Piece. rook white "R") (:a1 initial-board)))))
+
+(deftest check?-test
+  (testing "check by queen"
+    (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :a8 (Piece. queen black "q")) white)))
+  (testing "check by black knight"
+    (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :c2 (Piece. knight black "n")) white)))
+  (testing "check by white knight"
+    (is (check? (place-piece (place-piece empty-board :a1 (Piece. king black "K")) :c2 (Piece. knight white "n")) black)))
+  (testing "check by rook"
+    (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :a8 (Piece. rook black "r")) white)))
+  (testing "check by bishop"
+    (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :h8 (Piece. bishop black "b")) white)))
+  (testing "check by pawn"
+    (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :b2 (Piece. pawn black "p")) white))))
