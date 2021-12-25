@@ -1,7 +1,7 @@
 (ns lambda-chess.core-test
   (:require [clojure.test :refer :all]
             [lambda-chess.core :refer :all])
-  (:import (lambda_chess.core Piece)))
+  (:import (lambda_chess.core Piece Move)))
 
 (deftest square-names-test
   (testing "contains 64 square names"
@@ -126,9 +126,20 @@
     (is (= [:a2 :a3 :a4 :a5 :a6 :a7 :a8 :b1 :c1 :d1 :e1 :f1 :g1 :h1 :b2 :c3]
            (queen-possible-moves :a1 (place-piece empty-board :d4 (Piece. pawn white "p")) white)))))
 
+(deftest possible-moves-squares-test
+  (testing "possible moves' squares"
+    (is (= [:b2 :c3 :d4 :e5 :f6 :g7 :h8] (possible-moves-squares :a1 (place-piece empty-board :a1 (Piece. bishop white "b")) white))))
+  (testing "weird case: get null pointer exception for king at :a1"
+    (is (= [:a2 :b1 :b2]
+           (possible-moves-squares :a1 (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :b2 (Piece. pawn black "p")) white)))))
+
 (deftest possible-moves-test
-  (testing "possible moves"
-    (is (= [:b2 :c3 :d4 :e5 :f6 :g7 :h8] (possible-moves :a1 (place-piece empty-board :a1 (Piece. bishop white "b")) white)))))
+  (testing "possible moves test"
+    (is (= [
+            (Move. (Piece. king white "K") :a1 :a2 nil)
+            (Move. (Piece. king white "K") :a1 :b1 nil )
+            (Move. (Piece. king white "K") :a1 :b2 nil)]
+           (possible-moves :a1 (place-piece empty-board :a1 (Piece. king white "K")) white)))))
 
 (deftest king-possible-moves-test
   (testing "testing king possible moves, but there is our rook on a2"

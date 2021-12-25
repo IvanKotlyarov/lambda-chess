@@ -318,22 +318,24 @@
                 (= color (:pieceColor (% board))))
           (keys board)))
 
-(defn possible-moves [square-name board ^PieceColor color]
+(defn possible-moves-squares [square-name board ^PieceColor color]
   (let [
         piece (str (:type (:pieceType (square-name board))))]
-
     ((resolve (symbol (str "lambda-chess.core/" piece "-possible-moves"))) square-name board color)))
+
+(defn possible-moves [square-name board ^PieceColor color]
+  (map #(Move. (square-name board) square-name % nil) (possible-moves-squares square-name board color)))
 
 (defn pieces-captures [board ^PieceColor color]
   (let [
         squares (pieces-squares board color)
         captures (set (flatten (reduce #(conj % (if (= (:pieceType (%2 board)) pawn) (pawn-captures %2 board color)
-                                                                             (possible-moves %2 board color))) [] squares)))]
+                                                                             (possible-moves-squares %2 board color))) [] squares)))]
     captures))
 
 (defn king-possible-moves [square-name board ^PieceColor color]
   (let [
-        captures (pieces-captures board color)
+        captures (pieces-captures board (other-color color))
         moves (filter #(and (not (contains? captures %))
                             (or (empty? (% board))
                                 (not= color (:pieceColor (% board)))))
@@ -376,21 +378,18 @@
 (defn check? [board ^PieceColor color]
   (let [
         king-square (filter #(= king (:pieceType (% board))) (pieces-squares board color))
-        _ (println king-square)
-        captures (pieces-captures board (other-color color))
-        _ (println captures)
-        ]
+        captures (pieces-captures board (other-color color))]
     (contains? captures (first king-square))))
 
-#_(defn checkmate? [board ^PieceColor color]
+(defn checkmate? [board ^PieceColor color]
   (let [
-        king-square (filter (= king (:pieceType (pieces-squares board color))))
-        other-pieces (pieces-squares board (other-color color))
-        captures (pieces-captures board color)
+        king-square (filter #(= king (:pieceType (% board))) (pieces-squares board color))
+        _ (println king-square)
         our-pieces (pieces-squares board color)
-        our-pieces-moves (set (flatten (reduce #(conj % (possible-moves %2 board color)) [] other-pieces)))
-        mate (filter #(check? board color))
-        ]))
+        _ (println (reduce #(conj % (possible-moves %2 board color)) [] our-pieces))
+
+        our-pieces-moves (set (flatten (reduce #(conj % (possible-moves %2 board color)) [] our-pieces)))
+        _ (println our-pieces-moves)]))
 
 #_(defn isValidMove? [^Piece piece from to board promoted color]
   (if (not (check? board color))
@@ -403,4 +402,4 @@
         rand-square (rand-nth pieces-squares)
         rand-piece (rand-square board)
         ]
-    (make-move rand-piece rand-square (rand-nth (possible-moves rand-piece board color)) nil)))
+    (make-move rand-piece rand-square (rand-nth (possible-moves-squares rand-piece board color)) nil)))
