@@ -381,15 +381,13 @@
         captures (pieces-captures board (other-color color))]
     (contains? captures (first king-square))))
 
-(defn checkmate? [board ^PieceColor color]
+(defn checkmate [board ^PieceColor color]
   (let [
-        king-square (filter #(= king (:pieceType (% board))) (pieces-squares board color))
-        _ (println king-square)
         our-pieces (pieces-squares board color)
-        _ (println (reduce #(conj % (possible-moves %2 board color)) [] our-pieces))
-
         our-pieces-moves (set (flatten (reduce #(conj % (possible-moves %2 board color)) [] our-pieces)))
-        _ (println our-pieces-moves)]))
+        moves (filter #(not (check? (assoc (assoc board (:from %) nil) (:to %) (:piece %)) color)) our-pieces-moves)
+        ]
+    moves))
 
 #_(defn isValidMove? [^Piece piece from to board promoted color]
   (if (not (check? board color))

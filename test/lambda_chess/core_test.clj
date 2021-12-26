@@ -176,3 +176,19 @@
     (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :h8 (Piece. bishop black "b")) white)))
   (testing "check by pawn"
     (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :b2 (Piece. pawn black "p")) white))))
+
+(deftest checkmate-test
+  (testing "checkmate by two black rooks"
+    (is (= [] (checkmate
+                (place-piece
+                  (place-piece
+                    (place-piece empty-board :a1 (Piece. king white "K")) :a8 (Piece. rook black "r")) :b8 (Piece. rook black "r")) white))))
+  (testing "just check"
+    (is (= [(Move. (Piece. rook white "R") :h2 :a2 nil)] (checkmate (place-piece
+                           (place-piece
+                             (place-piece
+                               (place-piece empty-board :a1
+                                            (Piece. king white "K")) :a8
+                               (Piece. rook black "r")) :b8
+                             (Piece. rook black "r"))
+                           :h2 (Piece. rook white "R")) white)))))
