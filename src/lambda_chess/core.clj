@@ -1,12 +1,12 @@
 (ns lambda-chess.core
   (:require [clojure.math.combinatorics :as combo]))
 
-(defrecord PieceColor [color])
+(defrecord PieceColor [^String color])
 
 (def white (PieceColor. "white"))
 (def black (PieceColor. "black"))
 
-(defrecord PieceType [type])
+(defrecord PieceType [^String type])
 
 (def rook (PieceType. "rook"))
 (def knight (PieceType. "knight"))
@@ -25,15 +25,16 @@
 
 (def col-names ["a" "b" "c" "d" "e" "f" "g" "h"])
 (def row-names [1 2 3 4 5 6 7 8])
+
 (defn generate-square-names []
-  (map
-    (fn [[col row]] (keyword (str col row))) (combo/cartesian-product col-names row-names)))
+  (map (fn [[col row]] (keyword (str col row))) (combo/cartesian-product col-names row-names)))
+
 (def square-names (generate-square-names))
 
-(def start-game-state {:white-queen-side-castling true
-                       :white-king-side-castling true
-                       :black-queen-side-castling true
-                       :black-king-side-castling true
+(def start-game-state {:white-queenside-castling true
+                       :white-kingside-castling true
+                       :black-queenside-castling true
+                       :black-kingside-castling true
                        :white-en-passant false
                        :black-en-passant false})
 
@@ -49,12 +50,10 @@
   (max a (* -1 a)))
 
 (defn other-color [^PieceColor color]
-  (if (= white color)
-    black
-    white))
+  (if (= white color) black white))
 
 (defn generate-empty-board []
-  (reduce (fn [board square-name] (assoc board square-name nil)) {} square-names))
+  (reduce #(assoc % %2 nil) {} square-names))
 
 (def empty-board (generate-empty-board))
 
@@ -69,7 +68,7 @@
 
 (def initial-board (merge empty-board (merge (pawns black) (pawns white) pieces)))
 
-(defn place-piece [board square piece]
+(defn place-piece [board square ^Piece piece]
   (assoc board square piece))
 
 (defn row [square-name]
@@ -121,12 +120,11 @@
 (defn king-moves [square-name]
   (let [
         index-col (.indexOf col-names (col square-name))
-        index-row (.indexOf row-names (row square-name))
-        possible-moves (filter #(and
-                                  (>= 1 (abs (- index-col (.indexOf col-names (col %)))))
-                                  (>= 1 (abs (- index-row (.indexOf row-names (row %)))))
-                                  (not= square-name %)) square-names)]
-    possible-moves))
+        index-row (.indexOf row-names (row square-name))]
+    (filter #(and
+               (>= 1 (abs (- index-col (.indexOf col-names (col %)))))
+               (>= 1 (abs (- index-row (.indexOf row-names (row %)))))
+               (not= square-name %)) square-names)))
 
 (defn knight-moves [square-name]
   (let [
@@ -178,11 +176,9 @@
                          (if (empty? ((first (sort moves)) board))
                            (if (empty? ((second (sort moves)) board))
                              moves
-                             [(first moves)])
-                           [])
+                             [(first moves)]) [])
                          (if (empty? ((first (sort moves)) board))
-                           moves
-                           []))
+                           moves []))
         possible-moves (into [] (concat possible-moves (white-pawn-captures square-name board)))]
     possible-moves))
 
@@ -285,7 +281,6 @@
         top-left (:top-left directions)
         down-right (:down-right directions)
         down-left (:down-left directions)
-        _ (println square-name)
         top-right (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                  (reduced (conj % %2))
                                                                  (reduced %)))
@@ -329,7 +324,6 @@
 (defn pieces-captures [board ^PieceColor color]
   (let [
         squares (pieces-squares board color)
-        _ (println squares)
         captures (set (flatten (reduce #(conj % (if (= (:pieceType (%2 board)) pawn) (pawn-captures %2 board color)
                                                                              (possible-moves-squares %2 board color))) [] squares)))]
     captures))
@@ -346,7 +340,7 @@
         captures (pieces-captures board black)
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= white (:pieceColor (% board)))
-                                            (:white-queen-side-castling game-state)) [:b1 :c1 :d1])))
+                                            (:white-queenside-castling game-state)) [:b1 :c1 :d1])))
                 [:c1])
         moves (if (= 2 (count (filter #(and (not (contains? captures %))
                                             (not= white (:pieceColor (% board))))
@@ -360,7 +354,7 @@
 
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= black (:pieceColor (% board)))
-                                            (:white-queen-side-castling game-state)) [:b8 :c8 :d8])))
+                                            (:white-queenside-castling game-state)) [:b8 :c8 :d8])))
                 [:c8])
         moves (if (= 2 (count (filter #(and (not (contains? captures %))
                                             (not= black (:pieceColor (% board))))
@@ -398,8 +392,8 @@
         index-to (.indexOf row-names (col (:to move)))
         delta-index (abs (- index-from index-to))
         [new-game-state rook-square] (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
-                         [(assoc (assoc game-state (keyword (str color "-queen-side-castling")) false)
-                            (keyword (str color "-king-side-castling")) false)
+                         [(assoc (assoc game-state (keyword (str color "-queenside-castling")) false)
+                            (keyword (str color "-kingside-castling")) false)
                           (if (= "c" (col (:to move)))
                             (keyword (str "d" (row (:to move))))
                             (keyword (str "f" (row (:to move)))))]

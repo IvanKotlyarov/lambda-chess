@@ -151,7 +151,7 @@
   (testing "pawn captures"
     (is (= #{:d5} (pieces-captures (place-piece (place-piece empty-board :e4 (Piece. pawn white "P")) :d5 (Piece. pawn black "p")) white))))
   (testing "knight captures"
-    (is (= #{:c2} (pieces-captures (place-piece (place-piece empty-board :a1 (Piece. pawn white "P")) :c2 (Piece. pawn black "p")) black)))))
+    (is (= #{:c2 :b3} (pieces-captures (place-piece (place-piece empty-board :a1 (Piece. knight white "N")) :c2 (Piece. pawn black "p")) white)))))
 
 (deftest king-possible-moves-test
   (testing "testing king possible moves, but there is our rook on a2"
