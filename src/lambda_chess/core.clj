@@ -151,7 +151,7 @@
                                  (= -1 (- index-row (.indexOf row-names (row %))))))
                      square-names)
         possible-captures (filter #(not= nil (% board)) captures)
-        possible-captures (filter #(= "black" (:color (:pieceColor (% board)))) possible-captures)]
+        possible-captures (filter #(= black (:pieceColor (% board))) possible-captures)]
     possible-captures))
 
 (defn black-pawn-captures [square-name board]
@@ -165,7 +165,7 @@
                                  (= 1 (- index-row (.indexOf row-names (row %))))))
                          square-names)
         possible-captures (filter #(not= nil (% board)) captures)
-        possible-captures (filter #(= "white" (:color (:pieceColor (% board)))) possible-captures)]
+        possible-captures (filter #(= white (:pieceColor (% board))) possible-captures)]
     possible-captures))
 
 (defn pawn-captures [square-name board color]
@@ -285,7 +285,7 @@
         top-left (:top-left directions)
         down-right (:down-right directions)
         down-left (:down-left directions)
-
+        _ (println square-name)
         top-right (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                  (reduced (conj % %2))
                                                                  (reduced %)))
@@ -329,18 +329,17 @@
 (defn pieces-captures [board ^PieceColor color]
   (let [
         squares (pieces-squares board color)
+        _ (println squares)
         captures (set (flatten (reduce #(conj % (if (= (:pieceType (%2 board)) pawn) (pawn-captures %2 board color)
                                                                              (possible-moves-squares %2 board color))) [] squares)))]
     captures))
 
 (defn king-possible-moves [square-name board ^PieceColor color]
-  (let [
-        captures (pieces-captures board (other-color color))
-        moves (filter #(and (not (contains? captures %))
-                            (or (empty? (% board))
-                                (not= color (:pieceColor (% board)))))
-                      (king-moves square-name))]
-    moves))
+  (let [captures (pieces-captures board (other-color color))]
+    (filter #(and
+               (not= color (:pieceColor (% board)))
+               (not (contains? captures %)))
+            (king-moves square-name))))
 
 (defn white-castling [board game-state]
   (let [
@@ -372,7 +371,8 @@
 (defn pawn-promotion [square-name board piece]
   (assoc board square-name piece))
 
-#_(defn white-en-passant [game-state]
+(defn white-en-passant [game-state]
+
   )
 
 (defn check? [board ^PieceColor color]
@@ -389,11 +389,27 @@
         ]
     moves))
 
-#_(defn isValidMove? [^Piece piece from to board promoted color]
-  (if (not (check? board color))
-    ))
+(defn valid-move? [^Move move board color]
+  (not (check? (assoc (assoc board (:from move) nil) (:to move) (:piece move)) color)))
 
-#_(defn make-move [^Piece piece from to promoted])
+#_(defn make-move [^Move move board color game-state]
+  (let [
+        index-from (.indexOf col-names (col (:from move)))
+        index-to (.indexOf row-names (col (:to move)))
+        delta-index (abs (- index-from index-to))
+        [new-game-state rook-square] (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
+                         [(assoc (assoc game-state (keyword (str color "-queen-side-castling")) false)
+                            (keyword (str color "-king-side-castling")) false)
+                          (if (= "c" (col (:to move)))
+                            (keyword (str "d" (row (:to move))))
+                            (keyword (str "f" (row (:to move)))))]
+                         [nil nil])
+        new-board (if (valid-move? move board color)
+                    (if (not= (:promoted move) nil)
+                      (assoc (assoc board (:from move) nil) (:to move) (:promoted move))
+                      (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
+                        )))
+        ]))
 
 #_(defn random-agent [^PieceColor color board game-state moves]
   (let [

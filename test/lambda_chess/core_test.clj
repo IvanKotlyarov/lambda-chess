@@ -61,6 +61,10 @@
   (testing "testing knight moves from d4"
     (is (= [:b3 :b5 :c2 :c6 :e2 :e6 :f3 :f5] (knight-moves :d4)))))
 
+(deftest pawn-captures-test
+  (testing "pawn captures"
+    (is (= [:d5] (pawn-captures :e4 (place-piece (place-piece empty-board :e4 (Piece. pawn white "P")) :d5 (Piece. pawn black "p")) white)))))
+
 (deftest white-pawn-possible-moves-test
   (testing "testing white pawn moves from a2"
     (is (= [:a3 :a4] (white-pawn-possible-moves :a2 empty-board))))
@@ -116,7 +120,9 @@
 
 (deftest knight-possible-moves-test
   (testing "white knight moves from d4, but there is a white pawn on c2"
-    (is (= [:b3 :b5 :c6 :e2 :e6 :f3 :f5] (knight-possible-moves :d4 (place-piece empty-board :c2 (Piece. pawn white "P")) white)))))
+    (is (= [:b3 :b5 :c6 :e2 :e6 :f3 :f5] (knight-possible-moves :d4 (place-piece empty-board :c2 (Piece. pawn white "P")) white))))
+  (testing "knight possible-moves from a1"
+    (is (= [:b3 :c2] (knight-possible-moves :a1 empty-board white)))))
 
 (deftest queen-possible-moves-test
   (testing "white queen possible moves from a1"
@@ -141,9 +147,17 @@
             (Move. (Piece. king white "K") :a1 :b2 nil)]
            (possible-moves :a1 (place-piece empty-board :a1 (Piece. king white "K")) white)))))
 
+(deftest pieces-captures-test
+  (testing "pawn captures"
+    (is (= #{:d5} (pieces-captures (place-piece (place-piece empty-board :e4 (Piece. pawn white "P")) :d5 (Piece. pawn black "p")) white))))
+  (testing "knight captures"
+    (is (= #{:c2} (pieces-captures (place-piece (place-piece empty-board :a1 (Piece. pawn white "P")) :c2 (Piece. pawn black "p")) black)))))
+
 (deftest king-possible-moves-test
   (testing "testing king possible moves, but there is our rook on a2"
-    (is (= [:b1 (king-possible-moves :a1 (place-piece empty-board :a2 (Piece. rook white "R")) white)]))))
+    (is (= [:b1 (king-possible-moves :a1 (place-piece empty-board :a2 (Piece. rook white "R")) white)])))
+  (testing "inf loop"
+    (is (= [:e2 (king-possible-moves :e1 (place-piece (place-piece initial-board :e4 (Piece. pawn white "P")) :e2 nil) white)]))))
 
 (deftest white-castling-test
   (testing "testing can white castling"
@@ -175,7 +189,9 @@
   (testing "check by bishop"
     (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :h8 (Piece. bishop black "b")) white)))
   (testing "check by pawn"
-    (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :b2 (Piece. pawn black "p")) white))))
+    (is (check? (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :b2 (Piece. pawn black "p")) white)))
+  (testing "inf loop on initial position"
+    (is (not (check? (place-piece (place-piece initial-board :e4 (Piece. pawn white "P")) :e2 nil) white)))))
 
 (deftest checkmate-test
   (testing "checkmate by two black rooks"
@@ -192,3 +208,12 @@
                                (Piece. rook black "r")) :b8
                              (Piece. rook black "r"))
                            :h2 (Piece. rook white "R")) white)))))
+
+(deftest valid-move?-test
+  (testing "move is valid"
+    (is (valid-move? (Move. (Piece. pawn white "P") :e2 :e4 nil) initial-board white))))
+
+#_(deftest make-move-test
+  (testing "pawn e2-e4"
+    (is (= (place-piece (place-piece initial-board :e4 (Piece. pawn white "P")) :e2 nil)
+           (make-move (Move. (Piece. pawn white "P") :e2 :e4 nil) initial-board white start-game-state)))))
