@@ -321,15 +321,18 @@
 (defn possible-moves [square-name board ^PieceColor color]
   (map #(Move. (square-name board) square-name % nil) (possible-moves-squares square-name board color)))
 
-(defn pieces-captures [board ^PieceColor color]
+(defn pieces-captures [board ^PieceColor color ^Boolean except-king]
   (let [
         squares (pieces-squares board color)
-        captures (set (flatten (reduce #(conj % (if (= (:pieceType (%2 board)) pawn) (pawn-captures %2 board color)
-                                                                             (possible-moves-squares %2 board color))) [] squares)))]
+        captures (set (flatten (reduce #(conj % (if (= (:pieceType (%2 board)) pawn)
+                                                  (pawn-captures %2 board color)
+                                                  (if (and except-king (= (:pieceType (%2 board)) king))
+                                                    []
+                                                    (possible-moves-squares %2 board color)))) [] squares)))]
     captures))
 
 (defn king-possible-moves [square-name board ^PieceColor color]
-  (let [captures (pieces-captures board (other-color color))]
+  (let [captures (pieces-captures board (other-color color) true)]
     (filter #(and
                (not= color (:pieceColor (% board)))
                (not (contains? captures %)))
@@ -337,7 +340,7 @@
 
 (defn white-castling [board game-state]
   (let [
-        captures (pieces-captures board black)
+        captures (pieces-captures board black false)
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= white (:pieceColor (% board)))
                                             (:white-queenside-castling game-state)) [:b1 :c1 :d1])))
@@ -350,7 +353,7 @@
 
 (defn black-castling [board game-state]
   (let [
-        captures (pieces-captures board white)
+        captures (pieces-captures board white false)
 
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= black (:pieceColor (% board)))
@@ -372,7 +375,7 @@
 (defn check? [board ^PieceColor color]
   (let [
         king-square (filter #(= king (:pieceType (% board))) (pieces-squares board color))
-        captures (pieces-captures board (other-color color))]
+        captures (pieces-captures board (other-color color) false)]
     (contains? captures (first king-square))))
 
 (defn checkmate [board ^PieceColor color]

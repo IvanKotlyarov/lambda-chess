@@ -43,11 +43,9 @@
 
 (deftest queen-moves-test
   (testing "testing queen moves from a1"
-    (is (= [:b2 :c3 :d4 :e5 :f6 :g7 :h8 :a2 :a3 :a4 :a5 :a6 :a7 :a8 :b1 :c1 :d1 :e1 :f1 :g1 :h1]
-           (queen-moves :a1))))
+    (is (= [:b2 :c3 :d4 :e5 :f6 :g7 :h8 :a2 :a3 :a4 :a5 :a6 :a7 :a8 :b1 :c1 :d1 :e1 :f1 :g1 :h1] (queen-moves :a1))))
   (testing "testing queen moves from f3"
-    (is (= [:a8 :b7 :c6 :d1 :d5 :e2 :e4 :g2 :g4 :h1 :h5 :f1 :f2 :f4 :f5 :f6 :f7 :f8 :a3 :b3 :c3 :d3 :e3 :g3 :h3]
-           (queen-moves :f3)))))
+    (is (= [:a8 :b7 :c6 :d1 :d5 :e2 :e4 :g2 :g4 :h1 :h5 :f1 :f2 :f4 :f5 :f6 :f7 :f8 :a3 :b3 :c3 :d3 :e3 :g3 :h3] (queen-moves :f3)))))
 
 (deftest king-moves-test
   (testing "testing king moves from a3"
@@ -63,7 +61,9 @@
 
 (deftest pawn-captures-test
   (testing "pawn captures"
-    (is (= [:d5] (pawn-captures :e4 (place-piece (place-piece empty-board :e4 (Piece. pawn white "P")) :d5 (Piece. pawn black "p")) white)))))
+    (is (= [:d5]
+           (pawn-captures :e4 (place-piece
+                                  (place-piece empty-board :e4 (Piece. pawn white "P")) :d5 (Piece. pawn black "p")) white)))))
 
 (deftest white-pawn-possible-moves-test
   (testing "testing white pawn moves from a2"
@@ -85,7 +85,8 @@
 
 (deftest rook-directions-test
   (testing "testing rook directions from d4"
-    (is (= {:top [:d5 :d6 :d7 :d8] :downward [:d1 :d2 :d3] :left [:a4 :b4 :c4] :right [:e4 :f4 :g4 :h4]} (rook-directions :d4)))))
+    (is (= {:top [:d5 :d6 :d7 :d8] :downward [:d1 :d2 :d3] :left [:a4 :b4 :c4] :right [:e4 :f4 :g4 :h4]}
+           (rook-directions :d4)))))
 
 (deftest white-rook-possible-moves-test
   (testing "testing white rook possible moves from d4"
@@ -109,7 +110,8 @@
 
 (deftest bishop-directions-test
   (testing "testing bishop directions"
-    (is (= {:top-right [:e5 :f6 :g7 :h8] :top-left [:a7 :b6 :c5] :down-right [:e3 :f2 :g1] :down-left [:a1 :b2 :c3]} (bishop-directions :d4)))))
+    (is (=
+          {:top-right [:e5 :f6 :g7 :h8] :top-left [:a7 :b6 :c5] :down-right [:e3 :f2 :g1] :down-left [:a1 :b2 :c3]} (bishop-directions :d4)))))
 
 (deftest bishop-possible-moves-test
   (testing "white bishop possible moves from d4, but there is a black pawn on g7"
@@ -137,7 +139,8 @@
     (is (= [:b2 :c3 :d4 :e5 :f6 :g7 :h8] (possible-moves-squares :a1 (place-piece empty-board :a1 (Piece. bishop white "b")) white))))
   (testing "weird case: get null pointer exception for king at :a1"
     (is (= [:a2 :b1 :b2]
-           (possible-moves-squares :a1 (place-piece (place-piece empty-board :a1 (Piece. king white "K")) :b2 (Piece. pawn black "p")) white)))))
+           (possible-moves-squares :a1 (place-piece
+                                         (place-piece empty-board :a1 (Piece. king white "K")) :b2 (Piece. pawn black "p")) white)))))
 
 (deftest possible-moves-test
   (testing "possible moves test"
@@ -149,15 +152,20 @@
 
 (deftest pieces-captures-test
   (testing "pawn captures"
-    (is (= #{:d5} (pieces-captures (place-piece (place-piece empty-board :e4 (Piece. pawn white "P")) :d5 (Piece. pawn black "p")) white))))
+    (is (= #{:d5}
+           (pieces-captures (place-piece
+                              (place-piece empty-board :e4 (Piece. pawn white "P")) :d5 (Piece. pawn black "p")) white false))))
   (testing "knight captures"
-    (is (= #{:c2 :b3} (pieces-captures (place-piece (place-piece empty-board :a1 (Piece. knight white "N")) :c2 (Piece. pawn black "p")) white)))))
+    (is (= #{:c2 :b3}
+           (pieces-captures
+             (place-piece (place-piece empty-board :a1 (Piece. knight white "N")) :c2 (Piece. pawn black "p")) white false)))))
 
 (deftest king-possible-moves-test
   (testing "testing king possible moves, but there is our rook on a2"
     (is (= [:b1 (king-possible-moves :a1 (place-piece empty-board :a2 (Piece. rook white "R")) white)])))
   (testing "inf loop"
-    (is (= [:e2 (king-possible-moves :e1 (place-piece (place-piece initial-board :e4 (Piece. pawn white "P")) :e2 nil) white)]))))
+    (is (= [:e2 (king-possible-moves :e1
+                                     (place-piece (place-piece initial-board :e4 (Piece. pawn white "P")) :e2 nil) white)]))))
 
 (deftest white-castling-test
   (testing "testing can white castling"
