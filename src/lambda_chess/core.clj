@@ -71,6 +71,9 @@
 (defn place-piece [board square ^Piece piece]
   (assoc board square piece))
 
+(defn move-piece [board move]
+  (assoc (assoc board (:from move) nil) (:to move) (:piece move)))
+
 (defn row [square-name]
   (Character/digit (get (str square-name) 2) 10))
 
@@ -338,7 +341,7 @@
                (not (contains? captures %)))
             (king-moves square-name))))
 
-(defn white-castling [board game-state]
+(defn white-castling [move board game-state]
   (let [
         captures (pieces-captures board black false)
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
@@ -346,24 +349,38 @@
                                             (:white-queenside-castling game-state)) [:b1 :c1 :d1])))
                 [:c1])
         moves (if (= 2 (count (filter #(and (not (contains? captures %))
+                                            (:white-kingside-castling game-state)
                                             (not= white (:pieceColor (% board))))
                                       [:f1 :g1])))
-                (conj moves :g1))]
-    moves))
+                (conj moves :g1))
+        [rook-square-from rook-square-to] (if (= :c1 (:to move)) [:a1 :d1] [:h1 :f1])
+        new-board (if (some #(= % (:to move)) moves)
+                    (move-piece (move-piece board move) (Move. (Piece. rook white "R") rook-square-from rook-square-to nil)) nil)
+        ]
+    new-board))
 
-(defn black-castling [board game-state]
+(defn black-castling [move board game-state]
   (let [
         captures (pieces-captures board white false)
 
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= black (:pieceColor (% board)))
-                                            (:white-queenside-castling game-state)) [:b8 :c8 :d8])))
+                                            (:black-queenside-castling game-state)) [:b8 :c8 :d8])))
                 [:c8])
         moves (if (= 2 (count (filter #(and (not (contains? captures %))
+                                            (:black-kingside-castling game-state)
                                             (not= black (:pieceColor (% board))))
                                       [:f8 :g8])))
-                (conj moves :g8))]
-    moves))
+                (conj moves :g8))
+
+        [rook-square-from rook-square-to] (if (= :c8 (:to move)) [:a8 :d8] [:h8 :f8])
+        new-board (if (some #(= % (:to move)) moves)
+                    (move-piece (move-piece board move) (Move. (Piece. rook black "r") rook-square-from rook-square-to nil)) nil)
+        ]
+    new-board))
+
+(defn castling [move board game-state ^PieceColor color]
+  (if (= color white) (white-castling move board game-state) (black-castling move board game-state)))
 
 (defn pawn-promotion [square-name board piece]
   (assoc board square-name piece))
@@ -392,19 +409,21 @@
 #_(defn make-move [^Move move board color game-state]
   (let [
         index-from (.indexOf col-names (col (:from move)))
-        index-to (.indexOf row-names (col (:to move)))
+        index-to (.indexOf col-names (col (:to move)))
         delta-index (abs (- index-from index-to))
-        [new-game-state rook-square] (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
+        [new-game-state rook-square-to rook-square-from] (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
                          [(assoc (assoc game-state (keyword (str color "-queenside-castling")) false)
                             (keyword (str color "-kingside-castling")) false)
                           (if (= "c" (col (:to move)))
                             (keyword (str "d" (row (:to move))))
-                            (keyword (str "f" (row (:to move)))))]
-                         [nil nil])
+                            (keyword (str "f" (row (:to move)))))
+                          (if (= ""))]
+                         [game-state nil])
         new-board (if (valid-move? move board color)
                     (if (not= (:promoted move) nil)
                       (assoc (assoc board (:from move) nil) (:to move) (:promoted move))
                       (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
+                        (assoc (assoc (assoc board (:to move) (:piece move)) (:from move) nil) rook-square ())
                         )))
         ]))
 

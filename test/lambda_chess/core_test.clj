@@ -169,11 +169,17 @@
 
 (deftest white-castling-test
   (testing "testing can white castling"
-    (is (= [:c1 :g1] (white-castling (place-piece empty-board :e1 (Piece. king white "K")) start-game-state)))))
+    (is (= (assoc (assoc empty-board :g1 (Piece. king white "K")) :f1 (Piece. rook white "R"))
+           (white-castling (Move. (Piece. king white "K") :e1 :g1 nil)
+                           (assoc (assoc empty-board :e1 (Piece. king white "K")) :h1 (Piece. rook white "R"))
+                           start-game-state)))))
 
 (deftest black-castling-test
   (testing "testing can black castling"
-    (is (= [:c8 :g8] (black-castling (place-piece empty-board :e8 (Piece. king black "k")) start-game-state)))))
+    (is (= (assoc (assoc empty-board :g8 (Piece. king black "k")) :f8 (Piece. rook black "r"))
+           (black-castling (Move. (Piece. king black "k") :e8 :g8 nil)
+                           (assoc (assoc empty-board :e8 (Piece. king black "k")) :h8 (Piece. rook black "r"))
+                           start-game-state)))))
 
 (deftest pawn-promotion-test
   (testing "testing pawn promotion"
