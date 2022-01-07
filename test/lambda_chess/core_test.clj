@@ -227,7 +227,31 @@
   (testing "move is valid"
     (is (valid-move? (Move. (Piece. pawn white "P") :e2 :e4 nil) initial-board white))))
 
-#_(deftest make-move-test
+(deftest make-move-test
   (testing "pawn e2-e4"
-    (is (= (place-piece (place-piece initial-board :e4 (Piece. pawn white "P")) :e2 nil)
-           (make-move (Move. (Piece. pawn white "P") :e2 :e4 nil) initial-board white start-game-state)))))
+    (is (= [(place-piece (place-piece initial-board :e4 (Piece. pawn white "P")) :e2 nil) start-game-state
+            [(Move. (Piece. pawn white "P") :e2 :e4 nil)] true]
+           (make-move (Move. (Piece. pawn white "P") :e2 :e4 nil) initial-board white start-game-state start-moves-history))))
+  (testing "castling"
+    (is (= [(assoc (assoc empty-board :g1 (Piece. king white "K")) :f1 (Piece. rook white "R"))
+            {:white-kingside-castling false :white-queenside-castling false :black-kingside-castling true :black-queenside-castling true}
+            [(Move. (Piece. king white "K") :e1 :g1 nil)] true]
+           (make-move (Move. (Piece. king white "K") :e1 :g1 nil)
+                      (assoc (assoc empty-board :e1 (Piece. king white "K")) :h1 (Piece. rook white "R"))
+                      white start-game-state start-moves-history))))
+  (testing "promotion"
+    (is (= [(place-piece empty-board :a8 (Piece. queen white "Q"))
+            start-game-state
+            [(Move. (Piece. pawn white "P") :a7 :a8 (Piece. queen white "Q"))]
+            true]
+           (make-move (Move. (Piece. pawn white "P") :a7 :a8 (Piece. queen white "Q"))
+                      (place-piece empty-board :a7 (Piece. pawn white "P"))
+                      white start-game-state start-moves-history))))
+  (testing "en-passant"
+    (is (= [(place-piece empty-board :e6 (Piece. pawn white "P"))
+            start-game-state
+            [(Move. (Piece. pawn black "p") :e7 :e5 nil) (Move. (Piece. pawn white "P") :f5 :e6 nil)] true]
+           (make-move (Move. (Piece. pawn white "P") :f5 :e6 nil)
+                      (place-piece (place-piece empty-board :f5 (Piece. pawn white "P")) :e5 (Piece. pawn black "p"))
+                      white start-game-state
+                      [(Move. (Piece. pawn black "p") :e7 :e5 nil)])))))

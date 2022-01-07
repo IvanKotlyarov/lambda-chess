@@ -34,14 +34,15 @@
 (def start-game-state {:white-queenside-castling true
                        :white-kingside-castling true
                        :black-queenside-castling true
-                       :black-kingside-castling true
-                       :white-en-passant false
-                       :black-en-passant false})
+                       :black-kingside-castling true})
 
 (defn make-game-state [previous key value]
   (assoc previous key value))
 
 (def start-moves-history [])
+
+(defn make-history [history move]
+  (conj history move))
 
 (defn make-moves [from to ^Piece piece prev promoted]
   (conj prev (Move. piece from to promoted)))
@@ -406,26 +407,39 @@
 (defn valid-move? [^Move move board color]
   (not (check? (assoc (assoc board (:from move) nil) (:to move) (:piece move)) color)))
 
-#_(defn make-move [^Move move board color game-state]
+(defn make-move [^Move move board color game-state history]
   (let [
         index-from (.indexOf col-names (col (:from move)))
         index-to (.indexOf col-names (col (:to move)))
         delta-index (abs (- index-from index-to))
-        [new-game-state rook-square-to rook-square-from] (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
-                         [(assoc (assoc game-state (keyword (str color "-queenside-castling")) false)
-                            (keyword (str color "-kingside-castling")) false)
-                          (if (= "c" (col (:to move)))
-                            (keyword (str "d" (row (:to move))))
-                            (keyword (str "f" (row (:to move)))))
-                          (if (= ""))]
-                         [game-state nil])
-        new-board (if (valid-move? move board color)
+        last-move (last history)
+        square-en-passant (keyword (str (col (:to move)) (dec (row (:to move)))))
+        new-game-state (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
+                         (assoc (assoc game-state (keyword (str (:color color) "-queenside-castling")) false)
+                           (keyword (str (:color color) "-kingside-castling")) false)
+                         game-state)
+
+        [new-board comment] (if (valid-move? move board color)
                     (if (not= (:promoted move) nil)
-                      (assoc (assoc board (:from move) nil) (:to move) (:promoted move))
+                      (if (and
+                            (= pawn (:pieceType (:piece move)))
+                            (= 8 (row (:to move))) (= 7 (row (:from move)))
+                            (not= pawn (:pieceType (:promoted move)))
+                            (not= king (:pieceType (:promoted move))))
+                        [(assoc (assoc board (:from move) nil) (:to move) (:promoted move)) true]
+                        [board false])
                       (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
-                        (assoc (assoc (assoc board (:to move) (:piece move)) (:from move) nil) rook-square ())
-                        )))
-        ]))
+                        [(castling move board game-state color) true]
+                        (if (and (= pawn (:pieceType (:piece move))) (not= 0 delta-index) (empty? ((:to move) board)))
+                          (if (and (= pawn (:pieceType (square-en-passant board))) (= 2 (- (row (:from last-move)) (row (:to last-move)))))
+                            [(move-piece (assoc board square-en-passant nil) move) true]
+                            [board false])
+                          [(move-piece board move) true]))
+                      )
+                    [board false])
+        new-history (make-history history move)
+        ]
+    [new-board new-game-state new-history comment]))
 
 #_(defn random-agent [^PieceColor color board game-state moves]
   (let [
