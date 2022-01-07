@@ -19,6 +19,20 @@
 
 (defrecord Piece [^PieceType pieceType ^PieceColor pieceColor ^String unicode])
 
+(def white-king   (Piece. king   white "♔"))
+(def white-queen  (Piece. queen  white "♕"))
+(def white-rook   (Piece. rook   white "♖"))
+(def white-bishop (Piece. bishop white "♗"))
+(def white-knight (Piece. knight white "♘"))
+(def white-pawn   (Piece. pawn   white "♙"))
+
+(def black-king   (Piece. king   black "♚"))
+(def black-queen  (Piece. queen  black "♛"))
+(def black-rook   (Piece. rook   black "♜"))
+(def black-bishop (Piece. bishop black "♝"))
+(def black-knight (Piece. knight black "♞"))
+(def black-pawn   (Piece. pawn   black "♟"))
+
 (defrecord Square [^Piece piece])
 
 (defrecord Move [^Piece piece from to ^Piece promoted])
@@ -58,14 +72,14 @@
 
 (def empty-board (generate-empty-board))
 
-(def pieces {:a1 (Piece. rook white "R") :b1 (Piece. knight white "N") :c1 (Piece. rook bishop "B") :d1 (Piece. queen white "Q")
-                  :e1 (Piece. king white "K") :f1 (Piece. bishop white "b") :g1 (Piece. knight white "N") :h1 (Piece. rook white "R")
-                  :a8 (Piece. rook black "r") :b8 (Piece. knight black "n") :c8 (Piece. bishop black "b") :d8 (Piece. queen black "q")
-                  :e8 (Piece. king black "k") :f8 (Piece. bishop black "b") :g8 (Piece. knight black "n") :h8 (Piece. rook black "r")})
+(def pieces {:a1 white-rook :b1 white-knight :c1 white-bishop :d1 white-queen
+             :e1 white-king :f1 white-bishop :g1 white-knight :h1 white-rook
+             :a8 black-rook :b8 black-knight :c8 black-bishop :d8 black-queen
+             :e8 black-king :f8 black-bishop :g8 black-knight :h8 black-rook})
 
 (defn pawns [^PieceColor color]
-  (let [[r unicode] (if (= color white) [2 "P"] [7 "p"])]
-    (reduce #(assoc % (keyword (str %2 r)) (Piece. pawn color unicode)) {} col-names)))
+  (let [[r p] (if (= color white) [2 white-pawn] [7 black-pawn])]
+    (reduce #(assoc % (keyword (str %2 r)) p) {} col-names)))
 
 (def initial-board (merge empty-board (merge (pawns black) (pawns white) pieces)))
 
@@ -356,7 +370,7 @@
                 (conj moves :g1))
         [rook-square-from rook-square-to] (if (= :c1 (:to move)) [:a1 :d1] [:h1 :f1])
         new-board (if (some #(= % (:to move)) moves)
-                    (move-piece (move-piece board move) (Move. (Piece. rook white "R") rook-square-from rook-square-to nil)) nil)
+                    (move-piece (move-piece board move) (Move. white-rook rook-square-from rook-square-to nil)) nil)
         ]
     new-board))
 
@@ -376,7 +390,7 @@
 
         [rook-square-from rook-square-to] (if (= :c8 (:to move)) [:a8 :d8] [:h8 :f8])
         new-board (if (some #(= % (:to move)) moves)
-                    (move-piece (move-piece board move) (Move. (Piece. rook black "r") rook-square-from rook-square-to nil)) nil)
+                    (move-piece (move-piece board move) (Move. black-rook rook-square-from rook-square-to nil)) nil)
         ]
     new-board))
 
@@ -443,7 +457,22 @@
 
 #_(defn random-agent [^PieceColor color board game-state moves]
   (let [
-        rand-square (rand-nth pieces-squares)
-        rand-piece (rand-square board)
+        rand-piece (rand-nth pieces-squares)
+        rand-square (rand-piece board)
+        promoted (if (and (= (row rand-square) 8) (= pawn (:pieceType (rand-piece board))))
+                   ())
         ]
-    (make-move rand-piece rand-square (rand-nth (possible-moves-squares rand-piece board color)) nil)))
+    (make-move (Move. (rand-piece board) rand-piece rand-square ))))
+
+(defn col-names-for-display [row-name]
+  (reduce #(conj % (keyword (str %2 row-name))) [] col-names))
+
+(defn square-names-for-display []
+  (reduce #(conj % (col-names-for-display %2)) [] (reverse row-names)))
+
+(defn print-board [board]
+  (doseq [row (square-names-for-display)]
+    (doseq [col row
+            unicode (or (:unicode (col board)) " ")]
+      (print unicode " "))
+    (println)))
