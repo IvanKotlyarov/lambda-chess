@@ -394,15 +394,33 @@
         ]
     new-board))
 
+(defn en-passant-check [^Move move board history]
+  (let [
+        ; FIXME: check color to find out en-passant in above or below
+        square-en-passant (keyword (str (col (:to move)) (dec (row (:to move)))))
+        index-from (.indexOf col-names (col (:from move)))
+        index-to (.indexOf col-names (col (:to move)))
+        delta-index (abs (- index-from index-to))
+        last-move (last history)
+        ]
+    (if (and (= pawn (:pieceType (:piece move))) (not= 0 delta-index) (empty? ((:to move) board)))
+      (if (and (= pawn (:pieceType (square-en-passant board))) (= 2 (- (row (:from last-move)) (row (:to last-move)))))
+        [move]
+        [])
+      [])))
+
 (defn castling [move board game-state ^PieceColor color]
   (if (= color white) (white-castling move board game-state) (black-castling move board game-state)))
 
 (defn pawn-promotion [square-name board piece]
   (assoc board square-name piece))
 
-(defn white-en-passant [game-state]
-
-  )
+(defn all-possible-moves [^PieceColor color board game-state]
+  (let [
+        squares (pieces-squares board color)
+        pieces-possible-moves (map #(possible-moves % board color) squares)
+        ]
+    (flatten pieces-possible-moves)))
 
 (defn check? [board ^PieceColor color]
   (let [
@@ -448,21 +466,10 @@
                           (if (and (= pawn (:pieceType (square-en-passant board))) (= 2 (- (row (:from last-move)) (row (:to last-move)))))
                             [(move-piece (assoc board square-en-passant nil) move) true]
                             [board false])
-                          [(move-piece board move) true]))
-                      )
+                          [(move-piece board move) true])))
                     [board false])
-        new-history (make-history history move)
-        ]
+        new-history (make-history history move)]
     [new-board new-game-state new-history comment]))
-
-#_(defn random-agent [^PieceColor color board game-state moves]
-  (let [
-        rand-piece (rand-nth pieces-squares)
-        rand-square (rand-piece board)
-        promoted (if (and (= (row rand-square) 8) (= pawn (:pieceType (rand-piece board))))
-                   ())
-        ]
-    (make-move (Move. (rand-piece board) rand-piece rand-square ))))
 
 (defn col-names-for-display [row-name]
   (reduce #(conj % (keyword (str %2 row-name))) [] col-names))
@@ -476,3 +483,22 @@
             unicode (or (:unicode (col board)) " ")]
       (print unicode " "))
     (println)))
+
+(defn clear-screen []
+  (println (str (char 27) "[2J"))
+  (println (str (char 27) "[;H")))
+
+(defn make-random-move [board ^PieceColor color game-state history]
+  (if (= [] (checkmate board color))
+    :checkmate
+    (do
+      (clear-screen)
+      (print-board board)
+      #_(Thread/sleep 100)
+      (let [ move (rand-nth (all-possible-moves color board game-state))
+             [new-board new-game-state new-moves-history comment] (make-move move board color game-state history)]
+        (recur new-board (other-color color) new-game-state new-moves-history)))))
+
+(defn random-agent []
+  (make-random-move initial-board white start-game-state start-moves-history))
+
