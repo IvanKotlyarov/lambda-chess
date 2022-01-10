@@ -296,9 +296,9 @@
   (let [
         directions (bishop-directions square-name)
         top-right (:top-right directions)
-        top-left (:top-left directions)
+        top-left (reverse (:top-left directions))
         down-right (:down-right directions)
-        down-left (:down-left directions)
+        down-left (reverse (:down-left directions))
         top-right (reduce #(if (empty? (%2 board)) (conj % %2) (if (not= color (:pieceColor (%2 board)))
                                                                  (reduced (conj % %2))
                                                                  (reduced %)))

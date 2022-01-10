@@ -115,10 +115,12 @@
 
 (deftest bishop-possible-moves-test
   (testing "white bishop possible moves from d4, but there is a black pawn on g7"
-    (is (= [:e5 :f6 :g7 :a7 :b6 :c5 :e3 :f2 :g1 :a1 :b2 :c3]
+    (is (= [:e5 :f6 :g7 :c5 :b6 :a7 :e3 :f2 :g1 :c3 :b2 :a1]
            (bishop-possible-moves :d4 (place-piece empty-board :g7 black-pawn) white))))
   (testing "white bishop possible moves from a1, but there is our pawn on d4"
-    (is (= [:b2 :c3] (bishop-possible-moves :a1 (place-piece empty-board :d4 white-pawn) white)))))
+    (is (= [:b2 :c3] (bishop-possible-moves :a1 (place-piece empty-board :d4 white-pawn) white))))
+  (testing "white bishop possible moves from f1, but there is a white pawn on e2"
+    (is (= [:g2 :h3] (bishop-possible-moves :f1 (place-piece empty-board :e2 white-pawn) white)))))
 
 (deftest knight-possible-moves-test
   (testing "white knight moves from d4, but there is a white pawn on c2"
