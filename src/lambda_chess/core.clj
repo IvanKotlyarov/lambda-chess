@@ -190,30 +190,16 @@
 (defn white-pawn-possible-moves [square-name board]
   (let [
         moves (white-pawn-moves square-name)
-        possible-moves (if (= 2 (count moves))
-                         (if (empty? ((first (sort moves)) board))
-                           (if (empty? ((second (sort moves)) board))
-                             moves
-                             [(first moves)]) [])
-                         (if (empty? ((first (sort moves)) board))
-                           moves []))
-        possible-moves (into [] (concat possible-moves (white-pawn-captures square-name board)))]
-    possible-moves))
+        possible-moves (sort moves)
+        possible-moves (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] possible-moves)]
+    (into [] (concat possible-moves (white-pawn-captures square-name board)))))
 
 (defn black-pawn-possible-moves [square-name board]
   (let [
         moves (black-pawn-moves square-name)
-        possible-moves (if (= 2 (count moves))
-                         (if (empty? ((second (sort moves)) board))
-                           (if (empty? ((first (sort moves)) board))
-                             moves
-                             [(first moves)])
-                           [])
-                         (if (empty? ((second (sort moves)) board))
-                           moves
-                           []))
-        possible-moves (into [] (concat possible-moves (black-pawn-captures square-name board)))]
-    possible-moves))
+        possible-moves (reverse (sort moves))
+        possible-moves (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] possible-moves)]
+    (into [] (concat possible-moves (black-pawn-captures square-name board)))))
 
 (defn pawn-possible-moves [square-name board ^PieceColor color]
   (if (= color white)
