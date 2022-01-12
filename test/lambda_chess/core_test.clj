@@ -254,12 +254,19 @@
            (make-move (Move. white-pawn :a7 :a8 white-queen)
                       (place-piece empty-board :a7 white-pawn)
                       white start-game-state start-moves-history))))
-  (testing "en-passant"
+  (testing "white en-passant"
     (is (= [(place-piece empty-board :e6 white-pawn)
             start-game-state
             [(Move. black-pawn :e7 :e5 nil) (Move. white-pawn :f5 :e6 nil)] true]
            (make-move (Move. white-pawn :f5 :e6 nil)
                       (place-piece (place-piece empty-board :f5 white-pawn) :e5 black-pawn)
                       white start-game-state
-                      [(Move. black-pawn :e7 :e5 nil)])))))
+                      [(Move. black-pawn :e7 :e5 nil)]))))
+  (testing "black en-passant"
+    (is (= [(place-piece empty-board :d3 black-pawn)
+            start-game-state
+            [(Move. white-pawn :d2 :d4 nil) (Move. black-pawn :c4 :d3 nil)] true]
+           (make-move (Move. black-pawn :c4 :d3 nil)
+                      (place-piece (place-piece empty-board :d4 white-pawn) :c4 black-pawn) black start-game-state
+                      [(Move. white-pawn :d2 :d4 nil)])))))
 

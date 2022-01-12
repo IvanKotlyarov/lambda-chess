@@ -386,11 +386,11 @@
 (defn en-passant-check [^Move move ^PersistentHashMap board ^PersistentVector history]
   (let [
         ; FIXME: check color to find out en-passant in above or below
-        square-en-passant (keyword (str (col (:to move)) (dec (row (:to move)))))
         index-from (.indexOf ^PersistentVector col-names (col (:from move)))
         index-to (.indexOf ^PersistentVector col-names (col (:to move)))
         delta-index (abs (- index-from index-to))
         last-move (last history)
+        square-en-passant (:to last-move)
         ]
     (if (and (= pawn (:pieceType (:piece move))) (not= 0 delta-index) (empty? ((:to move) board)))
       (if (and (= pawn (:pieceType (square-en-passant board))) (= 2 (- (row (:from last-move)) (row (:to last-move)))))
@@ -428,13 +428,13 @@
 (defn valid-move? [^Move move ^PersistentHashMap board ^PieceColor color]
   (not (check? (assoc (assoc board (:from move) nil) (:to move) (:piece move)) color)))
 
-(defn make-move [^Move move ^PersistentHashMap board ^PieceColor ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
+(defn make-move [^Move move ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
   (let [
         index-from (.indexOf ^PersistentVector col-names (col (:from move)))
         index-to (.indexOf ^PersistentVector col-names (col (:to move)))
         delta-index (abs (- index-from index-to))
         last-move (last history)
-        square-en-passant (keyword (str (col (:to move)) (dec (row (:to move)))))
+        square-en-passant (:to last-move)
         new-game-state (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
                          (assoc (assoc game-state (keyword (str (:color color) "-queenside-castling")) false)
                            (keyword (str (:color color) "-kingside-castling")) false)
@@ -452,7 +452,7 @@
                       (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
                         [(castling move board game-state color) true]
                         (if (and (= pawn (:pieceType (:piece move))) (not= 0 delta-index) (empty? ((:to move) board)))
-                          (if (and (= pawn (:pieceType (square-en-passant board))) (= 2 (- (row (:from last-move)) (row (:to last-move)))))
+                          (if (and (= pawn (:pieceType (square-en-passant board))) (= 2 (abs (- (row (:from last-move)) (row (:to last-move))))))
                             [(move-piece (assoc board square-en-passant nil) move) true]
                             [board false])
                           [(move-piece board move) true])))
