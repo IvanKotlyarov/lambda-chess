@@ -91,27 +91,27 @@
 (deftest white-rook-possible-moves-test
   (testing "white rook possible moves from d4"
     (is (= [:d5 :d6 :d7 :d8 :d3 :d2 :d1 :c4 :b4 :a4 :e4 :f4 :g4 :h4]
-            (white-rook-possible-moves :d4 empty-board))))
+            (white-rook-possible-moves :d4 empty-board start-game-state))))
   (testing "white rook possible moves from d4 but there is white pawn on d6"
     (is (= [:d5 :d3 :d2 :d1 :c4 :b4 :a4 :e4 :f4 :g4 :h4]
-           (white-rook-possible-moves :d4 (place-piece empty-board :d6 white-pawn)))))
+           (white-rook-possible-moves :d4 (place-piece empty-board :d6 white-pawn) start-game-state))))
   (testing "white rook possible moves from d4, but there is white pawn on b4"
     (is (= [:d5 :d6 :d7 :d8 :d3 :d2 :d1 :c4 :e4 :f4 :g4 :h4]
-           (white-rook-possible-moves :d4 (place-piece empty-board :b4 white-pawn)))))
+           (white-rook-possible-moves :d4 (place-piece empty-board :b4 white-pawn) start-game-state))))
   (testing "white rook possible moves from d4, but there is black pawn on b4"
     (is (= [:d5 :d6 :d7 :d8 :d3 :d2 :d1 :c4 :b4 :e4 :f4 :g4 :h4]
-           (white-rook-possible-moves :d4 (place-piece empty-board :b4 black-pawn))))))
+           (white-rook-possible-moves :d4 (place-piece empty-board :b4 black-pawn) start-game-state)))))
 
 (deftest black-rook-possible-moves-test
   (testing "black rook possible moves from d4"
     (is (= [:d5 :d6 :d7 :d8 :d3 :d2 :d1 :c4 :b4 :a4 :e4 :f4 :g4 :h4]
-            (black-rook-possible-moves :d4 empty-board))))
+            (black-rook-possible-moves :d4 empty-board start-game-state))))
   (testing "black rook possible moves from d4 but there is white pawn on d6"
     (is (= [:d5 :d6 :d3 :d2 :d1 :c4 :b4 :a4 :e4 :f4 :g4 :h4]
-           (black-rook-possible-moves :d4 (place-piece empty-board :d6 white-pawn)))))
+           (black-rook-possible-moves :d4 (place-piece empty-board :d6 white-pawn) start-game-state))))
   (testing "black rook possible moves from d4 but there is black pawn on d6"
     (is (= [:d5 :d3 :d2 :d1 :c4 :b4 :a4 :e4 :f4 :g4 :h4]
-           (black-rook-possible-moves :d4 (place-piece empty-board :d6 black-pawn))))))
+           (black-rook-possible-moves :d4 (place-piece empty-board :d6 black-pawn) start-game-state)))))
 
 (deftest bishop-directions-test
   (testing "bishop directions"
@@ -121,33 +121,33 @@
 (deftest bishop-possible-moves-test
   (testing "white bishop possible moves from d4, but there is a black pawn on g7"
     (is (= [:e5 :f6 :g7 :c5 :b6 :a7 :e3 :f2 :g1 :c3 :b2 :a1]
-           (bishop-possible-moves :d4 (place-piece empty-board :g7 black-pawn) white))))
+           (bishop-possible-moves :d4 (place-piece empty-board :g7 black-pawn) white start-game-state))))
   (testing "white bishop possible moves from a1, but there is our pawn on d4"
-    (is (= [:b2 :c3] (bishop-possible-moves :a1 (place-piece empty-board :d4 white-pawn) white))))
+    (is (= [:b2 :c3] (bishop-possible-moves :a1 (place-piece empty-board :d4 white-pawn) white start-game-state))))
   (testing "white bishop possible moves from f1, but there is a white pawn on e2"
-    (is (= [:g2 :h3] (bishop-possible-moves :f1 (place-piece empty-board :e2 white-pawn) white)))))
+    (is (= [:g2 :h3] (bishop-possible-moves :f1 (place-piece empty-board :e2 white-pawn) white start-game-state)))))
 
 (deftest knight-possible-moves-test
   (testing "white knight moves from d4, but there is a white pawn on c2"
-    (is (= [:b3 :b5 :c6 :e2 :e6 :f3 :f5] (knight-possible-moves :d4 (place-piece empty-board :c2 white-pawn) white))))
+    (is (= [:b3 :b5 :c6 :e2 :e6 :f3 :f5] (knight-possible-moves :d4 (place-piece empty-board :c2 white-pawn) white start-game-state))))
   (testing "knight possible-moves from a1"
-    (is (= [:b3 :c2] (knight-possible-moves :a1 empty-board white)))))
+    (is (= [:b3 :c2] (knight-possible-moves :a1 empty-board white start-game-state)))))
 
 (deftest queen-possible-moves-test
   (testing "white queen possible moves from a1"
     (is (= [:a2 :a3 :a4 :a5 :a6 :a7 :a8 :b1 :c1 :d1 :e1 :f1 :g1 :h1 :b2 :c3 :d4 :e5 :f6 :g7 :h8]
-           (queen-possible-moves :a1 empty-board white))))
+           (queen-possible-moves :a1 empty-board white start-game-state))))
   (testing "white queen possible moves, but there is our pawn on d4"
     (is (= [:a2 :a3 :a4 :a5 :a6 :a7 :a8 :b1 :c1 :d1 :e1 :f1 :g1 :h1 :b2 :c3]
-           (queen-possible-moves :a1 (place-piece empty-board :d4 white-pawn) white)))))
+           (queen-possible-moves :a1 (place-piece empty-board :d4 white-pawn) white start-game-state)))))
 
 (deftest possible-moves-squares-test
   (testing "possible moves' squares"
-    (is (= [:b2 :c3 :d4 :e5 :f6 :g7 :h8] (possible-moves-squares :a1 (place-piece empty-board :a1 white-bishop) white))))
+    (is (= [:b2 :c3 :d4 :e5 :f6 :g7 :h8] (possible-moves-squares :a1 (place-piece empty-board :a1 white-bishop) white start-game-state))))
   (testing "weird case: get null pointer exception for king at :a1"
     (is (= [:a2 :b1 :b2]
            (possible-moves-squares :a1 (place-piece
-                                         (place-piece empty-board :a1 white-king) :b2 black-pawn) white)))))
+                                         (place-piece empty-board :a1 white-king) :b2 black-pawn) white start-game-state)))))
 
 (deftest possible-moves-test
   (testing "possible moves test"
@@ -155,24 +155,23 @@
             (Move. white-king :a1 :a2 nil)
             (Move. white-king :a1 :b1 nil )
             (Move. white-king :a1 :b2 nil)]
-           (possible-moves :a1 (place-piece empty-board :a1 white-king) white)))))
+           (possible-moves :a1 (place-piece empty-board :a1 white-king) white start-game-state)))))
 
 (deftest pieces-captures-test
   (testing "pawn captures"
     (is (= #{:d5}
            (pieces-captures (place-piece
-                              (place-piece empty-board :e4 white-pawn) :d5 black-pawn) white false))))
+                              (place-piece empty-board :e4 white-pawn) :d5 black-pawn) white false start-game-state))))
   (testing "knight captures"
     (is (= #{:c2 :b3}
            (pieces-captures
-             (place-piece (place-piece empty-board :a1 white-knight) :c2 black-pawn) white false)))))
+             (place-piece (place-piece empty-board :a1 white-knight) :c2 black-pawn) white false start-game-state)))))
 
 (deftest king-possible-moves-test
   (testing "king possible moves, but there is our rook on a2"
-    (is (= [:b1 (king-possible-moves :a1 (place-piece empty-board :a2 white-rook) white)])))
+    (is (= [:b1 :b2] (king-possible-moves :a1 (place-piece empty-board :a2 white-rook) white start-game-state))))
   (testing "inf loop"
-    (is (= [:e2 (king-possible-moves :e1
-                                     (place-piece (place-piece initial-board :e4 white-pawn) :e2 nil) white)]))))
+    (is (= [:e2] (king-possible-moves :e1 (place-piece (place-piece initial-board :e4 white-pawn) :e2 nil) white start-game-state)))))
 
 (deftest white-castling-test
   (testing "can white castling"
@@ -200,26 +199,26 @@
 
 (deftest check?-test
   (testing "check by queen"
-    (is (check? (place-piece (place-piece empty-board :a1 white-king) :a8 black-queen) white)))
+    (is (check? (place-piece (place-piece empty-board :a1 white-king) :a8 black-queen) white start-game-state)))
   (testing "check by black knight"
-    (is (check? (place-piece (place-piece empty-board :a1 white-king) :c2 black-knight) white)))
+    (is (check? (place-piece (place-piece empty-board :a1 white-king) :c2 black-knight) white start-game-state)))
   (testing "check by white knight"
-    (is (check? (place-piece (place-piece empty-board :a1 black-king) :c2 white-knight) black)))
+    (is (check? (place-piece (place-piece empty-board :a1 black-king) :c2 white-knight) black start-game-state)))
   (testing "check by rook"
-    (is (check? (place-piece (place-piece empty-board :a1 white-king) :a8 black-rook) white)))
+    (is (check? (place-piece (place-piece empty-board :a1 white-king) :a8 black-rook) white start-game-state)))
   (testing "check by bishop"
-    (is (check? (place-piece (place-piece empty-board :a1 white-king) :h8 black-bishop) white)))
+    (is (check? (place-piece (place-piece empty-board :a1 white-king) :h8 black-bishop) white start-game-state)))
   (testing "check by pawn"
-    (is (check? (place-piece (place-piece empty-board :a1 white-king) :b2 black-pawn) white)))
+    (is (check? (place-piece (place-piece empty-board :a1 white-king) :b2 black-pawn) white start-game-state)))
   (testing "inf loop on initial position"
-    (is (not (check? (place-piece (place-piece initial-board :e4 white-pawn) :e2 nil) white)))))
+    (is (not (check? (place-piece (place-piece initial-board :e4 white-pawn) :e2 nil) white start-game-state)))))
 
 (deftest checkmate-test
   (testing "checkmate by two black rooks"
     (is (= [] (checkmate
                 (place-piece
                   (place-piece
-                    (place-piece empty-board :a1 white-king) :a8 black-rook) :b8 black-rook) white))))
+                    (place-piece empty-board :a1 white-king) :a8 black-rook) :b8 black-rook) white start-game-state))))
   (testing "just check"
     (is (= [(Move. white-rook :h2 :a2 nil)] (checkmate (place-piece
                            (place-piece
@@ -228,11 +227,11 @@
                                             white-king) :a8
                                black-rook) :b8
                              black-rook)
-                           :h2 white-rook) white)))))
+                           :h2 white-rook) white start-game-state)))))
 
 (deftest valid-move?-test
   (testing "move is valid"
-    (is (valid-move? (Move. white-pawn :e2 :e4 nil) initial-board white))))
+    (is (valid-move? (Move. white-pawn :e2 :e4 nil) initial-board white start-game-state))))
 
 (deftest make-move-test
   (testing "pawn e2-e4"
@@ -270,3 +269,6 @@
                       (place-piece (place-piece empty-board :d4 white-pawn) :c4 black-pawn) black start-game-state
                       [(Move. white-pawn :d2 :d4 nil)])))))
 
+#_(deftest white-castling?-test
+  (testing "can we castling"
+    (is (white-castling? (Move. white-king :e1 :g1 nil) empty-board start-game-state))))
