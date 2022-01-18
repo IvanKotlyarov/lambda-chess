@@ -190,24 +190,26 @@
 (defn pawn-captures [^Keyword square-name ^PersistentHashMap board ^PieceColor color]
   (if (= color black) (black-pawn-captures square-name board) (white-pawn-captures square-name board)))
 
-(defn white-pawn-possible-moves [^Keyword square-name ^PersistentHashMap board]
+(defn white-pawn-possible-moves [^Keyword square-name ^PersistentHashMap board ^PersistentVector history]
   (let [
         moves (white-pawn-moves square-name)
         possible-moves (sort moves)
-        possible-moves (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] possible-moves)]
+        possible-moves (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] possible-moves)
+        promotion 
+        ]
     (into [] (concat possible-moves (white-pawn-captures square-name board)))))
 
-(defn black-pawn-possible-moves [^Keyword square-name ^PersistentHashMap board]
+(defn black-pawn-possible-moves [^Keyword square-name ^PersistentHashMap board ^PersistentVector history]
   (let [
         moves (black-pawn-moves square-name)
         possible-moves (reverse (sort moves))
         possible-moves (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] possible-moves)]
     (into [] (concat possible-moves (black-pawn-captures square-name board)))))
 
-(defn pawn-possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color game-state]
+(defn pawn-possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color game-state ^PersistentVector history]
   (if (= color white)
-    (white-pawn-possible-moves square-name board)
-    (black-pawn-possible-moves square-name board)))
+    (white-pawn-possible-moves square-name board history)
+    (black-pawn-possible-moves square-name board history)))
 
 (defn rook-directions [^Keyword square-name]
   (let [
@@ -231,7 +233,7 @@
                                 (rook-moves square-name))]
     {:top top-direction :downward downward-direction :left left-direction :right right-direction}))
 
-(defn rook-possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color game-state]
+(defn rook-possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color game-state ^PersistentVector history]
   (let [
         directions (rook-directions square-name)
         top (:top directions)
@@ -260,10 +262,11 @@
         ]
     (into [] (concat top-moves downward-moves left-moves right-moves))))
 
-(defn white-rook-possible-moves [^Keyword square-name ^PersistentHashMap board ^PersistentHashMap game-state]
-  (rook-possible-moves square-name board white game-state))
-(defn black-rook-possible-moves [^Keyword square-name ^PersistentHashMap board ^PersistentHashMap game-state]
-  (rook-possible-moves square-name board black game-state))
+(defn white-rook-possible-moves [^Keyword square-name ^PersistentHashMap board ^PersistentHashMap game-state ^PersistentVector history]
+  (rook-possible-moves square-name board white game-state history))
+
+(defn black-rook-possible-moves [^Keyword square-name ^PersistentHashMap board ^PersistentHashMap game-state ^PersistentVector history]
+  (rook-possible-moves square-name board black game-state history))
 
 (defn bishop-directions [^Keyword square-name]
   (let [
@@ -283,7 +286,8 @@
                           (bishop-moves square-name))]
     {:top-right top-right :top-left top-left :down-right down-right :down-left down-left}))
 
-(defn bishop-possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state]
+(defn bishop-possible-moves
+  [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state^PersistentVector history]
   (let [
         directions (bishop-directions square-name)
         top-right (:top-right directions)
@@ -311,39 +315,41 @@
                           [] down-left)]
     (into [] (concat top-right top-left down-right down-left))))
 
-(defn knight-possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state]
+(defn knight-possible-moves
+  [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
   (filter #(not= color (:pieceColor (% board))) (knight-moves square-name)))
 
-(defn queen-possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state]
-  (into [] (concat (rook-possible-moves square-name board color game-state)
-                   (bishop-possible-moves square-name board color game-state))))
+(defn queen-possible-moves
+  [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
+  (into [] (concat (rook-possible-moves square-name board color game-state history)
+                   (bishop-possible-moves square-name board color game-state history))))
 
 (defn pieces-squares [^PersistentHashMap board ^PieceColor color]
   (filter #(and (not (empty? (% board)))
-                (= color (:pieceColor (% board))))
-          (keys board)))
+                (= color (:pieceColor (% board)))) (keys board)))
 
-(defn possible-moves-squares [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state]
+(defn possible-moves-squares
+  [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
   (let [
         piece (str (:type (:pieceType (square-name board))))]
-    ((resolve (symbol (str "lambda-chess.core/" piece "-possible-moves"))) square-name board color game-state)))
+    ((resolve (symbol (str "lambda-chess.core/" piece "-possible-moves"))) square-name board color game-state history)))
 
-(defn possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color game-state]
-  (map #(Move. (square-name board) square-name % nil) (possible-moves-squares square-name board color game-state)))
+(defn possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color game-state ^PersistentVector history]
+  (map #(Move. (square-name board) square-name % nil) (possible-moves-squares square-name board color game-state history)))
 
-(defn pieces-captures [^PersistentHashMap board ^PieceColor color ^Boolean except-king ^PersistentHashMap game-state]
+(defn pieces-captures [^PersistentHashMap board ^PieceColor color ^Boolean except-king ^PersistentHashMap game-state ^PersistentVector history]
   (let [
         squares (pieces-squares board color)
         captures (set (flatten (reduce #(conj % (if (= (:pieceType (%2 board)) pawn)
                                                   (pawn-captures %2 board color)
                                                   (if (and except-king (= (:pieceType (%2 board)) king))
                                                     []
-                                                    (possible-moves-squares %2 board color game-state)))) [] squares)))]
+                                                    (possible-moves-squares %2 board color game-state history)))) [] squares)))]
     captures))
 
-(defn white-castling [^Move move ^PersistentHashMap board ^PersistentHashMap game-state]
+(defn white-castling [^Move move ^PersistentHashMap board ^PersistentHashMap game-state ^PersistentVector history]
   (let [
-        captures (pieces-captures board black false game-state)
+        captures (pieces-captures board black false game-state history)
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= white (:pieceColor (% board)))
                                             (:white-queenside-castling game-state)) [:b1 :c1 :d1])))
@@ -359,9 +365,9 @@
         ]
     new-board))
 
-(defn black-castling [^Move move ^PersistentHashMap board ^PersistentHashMap game-state]
+(defn black-castling [^Move move ^PersistentHashMap board ^PersistentHashMap game-state ^PersistentVector history]
   (let [
-        captures (pieces-captures board white false game-state)
+        captures (pieces-captures board white false game-state history)
 
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= black (:pieceColor (% board)))
@@ -379,9 +385,9 @@
         ]
     new-board))
 
-(defn white-castling? [^Move move ^PersistentHashMap board ^PersistentHashMap game-state]
+(defn white-castling? [^Move move ^PersistentHashMap board ^PersistentHashMap game-state ^PersistentVector history]
   (let [
-        captures (pieces-captures board black false game-state)
+        captures (pieces-captures board black false game-state history)
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= white (:pieceColor (% board)))
                                             (:white-queenside-castling game-state)) [:b1 :c1 :d1])))
@@ -391,15 +397,14 @@
                                             (not= white (:pieceColor (% board))))
                                       [:f1 :g1])))
                 (conj moves :g1))
-        _ (println board)
         answer (if (and (= (:from move) :e1) (some #(= % (:to move)) moves))
                  true false)
         ]
     answer))
 
-(defn black-castling? [^Move move ^PersistentHashMap board ^PersistentHashMap game-state]
+(defn black-castling? [^Move move ^PersistentHashMap board ^PersistentHashMap game-state ^PersistentVector history]
   (let [
-        captures (pieces-captures board white false game-state)
+        captures (pieces-captures board white false game-state history)
 
         moves (if (= 3 (count (filter #(and (not (contains? captures %))
                                             (not= black (:pieceColor (% board)))
@@ -410,24 +415,24 @@
                                             (not= black (:pieceColor (% board))))
                                       [:f8 :g8])))
                 (conj moves :g8))
-        _ (println (some #(= % (:to move)) moves))
         answer (if (and (= :e8 (:from move)) (some #(= % (:to move)) moves))
                  true false)
         ]
     answer))
 
-(defn castling [^Move move ^PersistentHashMap board ^PersistentHashMap game-state ^PieceColor color]
-  (if (= color white) (white-castling move board game-state) (black-castling move board game-state)))
+(defn castling [^Move move ^PersistentHashMap board ^PersistentHashMap game-state ^PieceColor color ^PersistentVector history]
+  (if (= color white) (white-castling move board game-state history) (black-castling move board game-state history)))
 
-(defn castling? [^Move move ^PieceColor color ^PersistentHashMap board ^PersistentHashMap game-state]
-  (if (= color white) (white-castling? move board game-state) (black-castling? move board game-state)))
+(defn castling? [^Move move ^PieceColor color ^PersistentHashMap board ^PersistentHashMap game-state ^PersistentVector history]
+  (if (= color white) (white-castling? move board game-state history) (black-castling? move board game-state history)))
 
-(defn king-possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state]
-  (let [captures (pieces-captures board (other-color color) true game-state)
+(defn king-possible-moves
+  [^Keyword square-name ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
+  (let [captures (pieces-captures board (other-color color) true game-state history)
         [piece-king move-list] (if (= color white) [white-king [:c1 :g1]] [black-king [:c8 :g8]])
 
         castling-1 (if (= color white)
-                   (filter #(castling? (Move. piece-king square-name % nil) color board game-state) move-list))]
+                   (filter #(castling? (Move. piece-king square-name % nil) color board game-state history) move-list))]
     (flatten (conj (filter #(and
                (not= color (:pieceColor (% board)))
                (not (contains? captures %)))
@@ -448,33 +453,29 @@
         [])
       [])))
 
-(defn pawn-promotion [^Keyword square-name ^PersistentHashMap board ^Piece piece]
-  (assoc board square-name piece))
-
-(defn all-possible-moves [^PieceColor ^PieceColor color ^PersistentHashMap board ^PersistentHashMap game-state]
+(defn all-possible-moves [^PieceColor ^PieceColor color ^PersistentHashMap board ^PersistentHashMap game-state ^PersistentVector history]
   (let [
         squares (pieces-squares board color)
-        pieces-possible-moves (map #(if (:pieceType ) (possible-moves % board color game-state)) squares)
-        ; now lets check how about castling
-        ]
+        pieces-possible-moves (map #(possible-moves % board color game-state ^PersistentVector history) squares)]
     (flatten pieces-possible-moves)))
 
-(defn check? [^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state]
+(defn check? [^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
   (let [
         king-square (filter #(= king (:pieceType (% board))) (pieces-squares board color))
-        captures (pieces-captures board (other-color color) false game-state)]
+        captures (pieces-captures board (other-color color) false game-state ^PersistentVector history)]
     (contains? captures (first king-square))))
 
-(defn checkmate [^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state]
+(defn checkmate [^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
   (let [
         our-pieces (pieces-squares board color)
-        our-pieces-moves (set (flatten (reduce #(conj % (possible-moves %2 board color game-state)) [] our-pieces)))
-        moves (filter #(not (check? (assoc (assoc board (:from %) nil) (:to %) (:piece %)) color game-state)) our-pieces-moves)
+        our-pieces-moves (set (flatten (reduce #(conj % (possible-moves %2 board color game-state ^PersistentVector history)) [] our-pieces)))
+        moves (filter #(not (check? (assoc (assoc board (:from %) nil) (:to %) (:piece %)) color game-state ^PersistentVector history))
+                      our-pieces-moves)
         ]
     moves))
 
-(defn valid-move? [^Move move ^PersistentHashMap board ^PieceColor color game-state]
-  (not (check? (assoc (assoc board (:from move) nil) (:to move) (:piece move)) color game-state)))
+(defn valid-move? [^Move move ^PersistentHashMap board ^PieceColor color game-state ^PersistentVector history]
+  (not (check? (assoc (assoc board (:from move) nil) (:to move) (:piece move)) color game-state history)))
 
 (defn make-move [^Move move ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
   (let [
@@ -488,7 +489,7 @@
                            (keyword (str (:color color) "-kingside-castling")) false)
                          game-state)
 
-        [new-board comment] (if (valid-move? move board color game-state)
+        [new-board comment] (if (valid-move? move board color game-state history)
                     (if (not= (:promoted move) nil)
                       (if (and
                             (= pawn (:pieceType (:piece move)))
@@ -498,7 +499,7 @@
                         [(assoc (assoc board (:from move) nil) (:to move) (:promoted move)) true]
                         [board false])
                       (if (and (= king (:pieceType (:piece move))) (not= 1 delta-index))
-                        [(castling move board game-state color) true]
+                        [(castling move board game-state color history) true]
                         (if (and (= pawn (:pieceType (:piece move))) (not= 0 delta-index) (empty? ((:to move) board)))
                           (if (and (= pawn (:pieceType (square-en-passant board))) (= 2 (abs (- (row (:from last-move)) (row (:to last-move))))))
                             [(move-piece (assoc board square-en-passant nil) move) true]
@@ -526,13 +527,13 @@
   (println (str (char 27) "[;H")))
 
 (defn make-random-move [^PersistentHashMap board ^PieceColor ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
-  (if (= [] (checkmate board color game-state))
+  (if (= [] (checkmate board color game-state history))
     :checkmate
     (do
       (clear-screen)
       (print-board board)
       #_(Thread/sleep 100)
-      (let [ move (rand-nth (all-possible-moves color board game-state))
+      (let [ move (rand-nth (all-possible-moves color board game-state history))
              [new-board new-game-state new-moves-history comment] (make-move move board color game-state history)]
         (recur new-board (other-color color) new-game-state new-moves-history)))))
 
