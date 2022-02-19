@@ -74,7 +74,10 @@
                                                                        [(Move. black-bishop :h1 :g2 nil)]))))
   (testing "white pawn moves from a2, but we can take black pawn on b3"
     (is (= [(Move. white-pawn :a2 :a3 nil) (Move. white-pawn :a2 :a4 nil) (Move. white-pawn :a2 :b3 nil)]
-           (white-pawn-possible-moves :a2 (place-piece empty-board :b3 black-pawn) [(Move. black-bishop :h1 :g2 nil)])))))
+           (white-pawn-possible-moves :a2 (place-piece empty-board :b3 black-pawn) [(Move. black-bishop :h1 :g2 nil)]))))
+  (testing "white pawn moves from a7"
+    (is (= [(Move. white-pawn :a7 :a8 white-queen) (Move. white-pawn :a7 :a8 white-rook) (Move. white-pawn :a7 :a8 white-knight)
+            (Move. white-pawn :a7 :a8 white-bishop)] (white-pawn-possible-moves :a7 empty-board start-moves-history)))))
 
 (deftest black-pawn-captures-test
   (testing "black pawn captures from a7"
@@ -85,7 +88,10 @@
     (is (= [(Move. black-pawn :a7 :a6 nil) (Move. black-pawn :a7 :a5 nil)]
            (black-pawn-possible-moves :a7 empty-board [(Move. white-bishop :h1 :g2 nil)]))))
   (testing "black pawn moves from a7, but there is our pawn on a5"
-    (if [(Move. black-pawn :a7 :a6 nil)] (black-pawn-possible-moves :a7 (place-piece empty-board :a5 "♟") [(Move. white-bishop :h1 :g2 nil)]))))
+    (if [(Move. black-pawn :a7 :a6 nil)] (black-pawn-possible-moves :a7 (place-piece empty-board :a5 "♟") [(Move. white-bishop :h1 :g2 nil)])))
+  (testing "black pawn moves from a2"
+    (is (= [(Move. black-pawn :a2 :a1 black-queen) (Move. black-pawn :a2 :a1 black-rook) (Move. black-pawn :a2 :a1 black-knight)
+            (Move. black-pawn :a2 :a1 black-bishop)] (black-pawn-possible-moves :a2 empty-board start-moves-history)))))
 
 (deftest rook-directions-test
   (testing "rook directions from d4"
@@ -318,3 +324,4 @@
 #_(deftest white-castling?-test
   (testing "can we castling"
     (is (white-castling? (Move. white-king :e1 :g1 nil) empty-board start-game-state))))
+

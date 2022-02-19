@@ -205,8 +205,10 @@
                 square-names)
         last-move (last history)
         squares (map #(keyword (str (col %) (dec (row %)))) captures)
-        squares (filter #(and (empty? (% board)) (= 2 (abs (- (row (:from last-move)) (row (:to last-move)))))
-                      (= pawn (:pieceType (% board))) (= (:to last-move) %)) squares)
+        squares (if (= last-move nil)
+                  []
+                  (filter #(and (empty? (% board)) (= 2 (abs (- (row (:from last-move)) (row (:to last-move)))))
+                                (= pawn (:pieceType (% board))) (= (:to last-move) %)) squares))
         ]
     squares))
 
@@ -215,15 +217,14 @@
         moves (white-pawn-moves square-name)
         possible-moves (sort moves)
         possible-moves (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] possible-moves)
-        possible-moves (if (not (empty? (white-en-passant square-name board history)))
-                         (conj possible-moves (white-en-passant square-name board history))
-                         possible-moves)
-        promoted (map #(if (= 8 (row %))
-                         [(Move. white-pawn square-name % white-queen) (Move. white-pawn square-name % white-rook)
-                          (Move. white-pawn square-name % white-knight) (Move. white-pawn square-name % white-bishop)]) possible-moves)
-        promoted (filter #(not= % nil) promoted)]
-    (into [] (concat promoted (map #(Move. white-pawn square-name % nil)
-                                   (into [] (concat possible-moves (white-pawn-captures square-name board))))))))
+
+        possible-moves (into [] (concat possible-moves (white-pawn-captures square-name board) (white-en-passant square-name board history)))
+        possible-moves (flatten (map #(if (= 8 (row %)) [(Move. white-pawn square-name % white-queen) (Move. white-pawn square-name % white-rook)
+                                                (Move. white-pawn square-name % white-knight) (Move. white-pawn square-name % white-bishop)]
+                                               (Move. white-pawn square-name % nil)) possible-moves))
+         ]
+    possible-moves
+    ))
 
 (defn black-en-passant [^Keyword square-name ^PersistentHashMap board ^PersistentVector history]
   (let [
@@ -237,8 +238,8 @@
                          square-names)
         last-move (last history)
         squares (map #(keyword (str (col %) (dec (row %)))) captures)
-        squares (filter #(and (empty? (% board)) (= 2 (abs (- (row (:from last-move)) (row (:to last-move)))))
-                              (= pawn (:pieceType (% board))) (= (:to last-move) %)) squares)]
+        squares (if (= nil last-move) [] (filter #(and (empty? (% board)) (= 2 (abs (- (row (:from last-move)) (row (:to last-move)))))
+                              (= pawn (:pieceType (% board))) (= (:to last-move) %)) squares))]
     squares))
 
 (defn black-pawn-possible-moves [^Keyword square-name ^PersistentHashMap board ^PersistentVector history]
@@ -246,15 +247,14 @@
         moves (black-pawn-moves square-name)
         possible-moves (reverse (sort moves))
         possible-moves (reduce #(if (empty? (%2 board)) (conj % %2) (reduced %)) [] possible-moves)
-        possible-moves (if (not (empty? (black-en-passant square-name board history)))
-                         (conj possible-moves (black-en-passant square-name board history))
-                         possible-moves)
-        promoted (map #(if (= 8 (row square-name))
-                         [(Move. black-pawn square-name % black-queen) (Move. black-pawn square-name % black-rook)
-                          (Move. black-pawn square-name % black-knight) (Move. black-pawn square-name % black-bishop)]) possible-moves)
-        promoted (filter #(not= % nil) promoted)]
-    (into [] (concat promoted
-                     (map #(Move. black-pawn square-name % nil) (into [] (concat possible-moves (black-pawn-captures square-name board))))))))
+
+        possible-moves (into [] (concat possible-moves (black-pawn-captures square-name board) (black-en-passant square-name board history)))
+        possible-moves (flatten (map #(if (= 1 (row %)) [(Move. black-pawn square-name % black-queen) (Move. black-pawn square-name % black-rook)
+                                                         (Move. black-pawn square-name % black-knight) (Move. black-pawn square-name % black-bishop)]
+                                                        (Move. black-pawn square-name % nil)) possible-moves))
+        ]
+    possible-moves
+    ))
 
 (defn pawn-possible-moves [^Keyword square-name ^PersistentHashMap board ^PieceColor color game-state ^PersistentVector history]
   (if (= color white)
@@ -390,7 +390,8 @@
         piece (str (:type (:pieceType (square-name board))))]
     ((resolve (symbol (str "lambda-chess.core/" piece "-possible-moves"))) square-name board color game-state history)))
 
-(defn pieces-captures [^PersistentHashMap board ^PieceColor color ^Boolean except-king ^PersistentHashMap game-state ^PersistentVector history]
+(defn pieces-captures
+  [^PersistentHashMap board ^PieceColor color ^Boolean except-king ^PersistentHashMap game-state ^PersistentVector history]
   (let [
         squares (pieces-squares board color)
         captures (set (flatten (reduce #(conj % (if (= (:pieceType (%2 board)) pawn)
@@ -529,7 +530,7 @@
   (let [
         squares (pieces-squares board color)
         pieces-possible-moves (map #(possible-moves % board color game-state ^PersistentVector history) squares)]
-    (filter #(valid-move? % board color game-state history) (flatten pieces-possible-moves))))
+    (filter #(and (not= king (:pieceType ((:to %) board))) (valid-move? % board color game-state history)) (flatten pieces-possible-moves))))
 
 (defn make-move [^Move move ^PersistentHashMap board ^PieceColor color ^PersistentHashMap game-state ^PersistentVector history]
   (let [
