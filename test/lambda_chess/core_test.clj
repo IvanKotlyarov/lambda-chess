@@ -211,7 +211,14 @@
            (king-possible-moves :a1 (place-piece empty-board :a2 white-rook) white start-game-state start-moves-history))))
   (testing "inf loop"
     (is (= [(Move. white-king :e1 :e2 nil)] (king-possible-moves
-                   :e1 (move-piece initial-board (Move. white-pawn :e2 :e4 nil)) white start-game-state start-moves-history)))))
+                   :e1 (move-piece initial-board (Move. white-pawn :e2 :e4 nil)) white start-game-state start-moves-history))))
+  (testing "castling"
+    (is (= [(Move. white-king :e1 :c1 nil) (Move. white-king :e1 :g1 nil) (Move. white-king :e1 :d1 nil) (Move. white-king :e1 :d2 nil)
+           (Move. white-king :e1 :e2 nil) (Move. white-king :e1 :f1 nil) (Move. white-king :e1 :f2 nil)]
+           (king-possible-moves :e1 (place-piece (place-piece empty-board :h1 white-rook) :e1 white-king) white start-game-state []))))
+  (testing "check"
+    (is (= [(Move. white-king :e1 :e2 nil)] (king-possible-moves :e1 (place-piece (place-piece empty-board :e2 black-queen) :e1 white-king)
+                                                                 white start-game-state [])))))
 
 (deftest white-castling-test
   (testing "can white castling"
@@ -266,7 +273,18 @@
                            :h2 white-rook) white start-game-state start-moves-history))))
   (testing "is not mate after Kb3"
     (is (not (checkmate?
-               (move-piece initial-board (Move. white-knight :b1 :c3 nil)) black start-game-state [(Move. white-knight :b1 :c3 nil)])))))
+               (move-piece initial-board (Move. white-knight :b1 :c3 nil)) black start-game-state [(Move. white-knight :b1 :c3 nil)]))))
+  (testing "is mate"
+    (is (not (checkmate?
+               (place-piece (place-piece (place-piece empty-board :f2 white-rook) :f3 white-king) :f1 black-king) black start-game-state []))))
+  (testing "fake"
+    (is (not (checkmate? (place-piece (place-piece (place-piece (place-piece (place-piece (place-piece (place-piece empty-board :f1 white-rook)
+                                                                                                       :f8 white-queen)
+                                                                                          :h2 white-king)
+                                                                             :a8 black-queen)
+                                                                :g7 black-pawn)
+                                                   :h7 black-pawn)
+                                      :h8 black-king) black start-game-state [])))))
 
 #_(
 
@@ -288,27 +306,26 @@
 (deftest make-move-test
   (testing "pawn e2-e4"
     (is (= [(place-piece (place-piece initial-board :e4 white-pawn) :e2 nil) start-game-state
-            [(Move. white-pawn :e2 :e4 nil)] true]
+            [(Move. white-pawn :e2 :e4 nil)]]
            (make-move (Move. white-pawn :e2 :e4 nil) initial-board white start-game-state start-moves-history))))
   (testing "castling"
     (is (= [(assoc (assoc empty-board :g1 white-king) :f1 white-rook)
             {:white-kingside-castling false :white-queenside-castling false :black-kingside-castling true :black-queenside-castling true}
-            [(Move. white-king :e1 :g1 nil)] true]
+            [(Move. white-king :e1 :g1 nil)]]
            (make-move (Move. white-king :e1 :g1 nil)
                       (assoc (assoc empty-board :e1 white-king) :h1 white-rook)
                       white start-game-state start-moves-history))))
   (testing "promotion"
     (is (= [(place-piece empty-board :a8 white-queen)
             start-game-state
-            [(Move. white-pawn :a7 :a8 white-queen)]
-            true]
+            [(Move. white-pawn :a7 :a8 white-queen)]]
            (make-move (Move. white-pawn :a7 :a8 white-queen)
                       (place-piece empty-board :a7 white-pawn)
                       white start-game-state start-moves-history))))
   (testing "white en-passant"
     (is (= [(place-piece empty-board :e6 white-pawn)
             start-game-state
-            [(Move. black-pawn :e7 :e5 nil) (Move. white-pawn :f5 :e6 nil)] true]
+            [(Move. black-pawn :e7 :e5 nil) (Move. white-pawn :f5 :e6 nil)]]
            (make-move (Move. white-pawn :f5 :e6 nil)
                       (place-piece (place-piece empty-board :f5 white-pawn) :e5 black-pawn)
                       white start-game-state
@@ -316,7 +333,7 @@
   (testing "black en-passant"
     (is (= [(place-piece empty-board :d3 black-pawn)
             start-game-state
-            [(Move. white-pawn :d2 :d4 nil) (Move. black-pawn :c4 :d3 nil)] true]
+            [(Move. white-pawn :d2 :d4 nil) (Move. black-pawn :c4 :d3 nil)]]
            (make-move (Move. black-pawn :c4 :d3 nil)
                       (place-piece (place-piece empty-board :d4 white-pawn) :c4 black-pawn) black start-game-state
                       [(Move. white-pawn :d2 :d4 nil)])))))
@@ -325,3 +342,59 @@
   (testing "can we castling"
     (is (white-castling? (Move. white-king :e1 :g1 nil) empty-board start-game-state))))
 
+(deftest draw?-test
+  (testing "dead position"
+    (is (draw? (place-piece (place-piece empty-board :a1 white-king) :b3 black-king) start-game-state [])))
+  (testing "stalemate"
+    (is (draw? (place-piece (place-piece empty-board :a1 white-king) :b3 black-queen) start-game-state [])))
+  (testing "stalemate"
+    (is (draw? (place-piece (place-piece (place-piece empty-board :b2 black-rook) :a1 white-king) :c3 black-king)
+               start-game-state [])))
+  (testing "stalemate"
+    (is (draw? (place-piece (place-piece (place-piece empty-board :f7 white-pawn) :f6 white-king) :f8 black-king)
+               start-game-state [])))
+  (testing "dead position"
+    (is (draw? (place-piece (place-piece (place-piece empty-board :f7 white-knight) :f6 white-king) :f8 black-king)
+               start-game-state [])))
+  (testing "dead position"
+    (is (draw? (place-piece (place-piece (place-piece empty-board :f7 black-knight) :f6 white-king) :f8 black-king)
+               start-game-state [])))
+  (testing "dead position"
+    (is (draw? (place-piece (place-piece (place-piece empty-board :f7 white-bishop) :f6 white-king) :f8 black-king)
+               start-game-state [])))
+  (testing "dead position"
+    (is (draw? (place-piece (place-piece (place-piece empty-board :f7 black-bishop) :f6 white-king) :f8 black-king)
+               start-game-state []))))
+
+(deftest find-winning-move-test
+  (testing "mate"
+    (is (= (Move. white-rook :a2 :a1 nil)
+           (find-winning-move (place-piece (place-piece (place-piece empty-board :a2 white-rook) :f3 white-king) :f1 black-king) white
+                              start-game-state []))))
+  (testing "linear mate"
+    (is (= (Move. white-rook :a3 :a1 nil)
+           (find-winning-move
+             (place-piece (place-piece (place-piece (place-piece empty-board :a3 white-rook) :b2 white-rook) :h8 white-king) :f1 black-king)
+             white start-game-state [])))))
+
+(deftest eval-fn-test
+  (testing "score"
+    (is (= 0 (eval-fn initial-board white))))
+  (testing "score"
+    (is (= 10 (eval-fn
+                (place-piece (place-piece (place-piece (place-piece empty-board :a3 white-rook) :b2 white-rook) :h8 white-king) :f1 black-king)
+                       white))))
+  (testing "score"
+    (is (= 5 (eval-fn (place-piece (place-piece (place-piece empty-board :a2 white-rook) :f3 white-king) :f1 black-king) white)))))
+
+(deftest alfa-beta-result-test
+  (testing "mate in two moves (losing queen)"
+    (is (= MAX-SCORE                                                 ; (Move. white-queen :f2 :f8 nil)
+           (alpha-beta-result
+             [(place-piece (place-piece (place-piece (place-piece (place-piece (place-piece (place-piece empty-board :f1 white-rook)
+                                                                                            :f2 white-queen)
+                                                                               :h2 white-king)
+                                                                  :a8 black-queen)
+                                                     :g7 black-pawn)
+                                        :h7 black-pawn)
+                           :h8 black-king) start-game-state []] white 3 MIN-SCORE MIN-SCORE true)))))
