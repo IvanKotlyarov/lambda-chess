@@ -61,10 +61,10 @@ emptyBoard = Board M.empty
 placePiece :: Square -> Piece -> Board -> Board
 placePiece square piece (Board squares) = Board $ M.insert square piece squares
 
-deletePiece :: Square -> Board -> Board 
+deletePiece :: Square -> Board -> Board
 deletePiece square (Board squares) = Board $ M.delete square squares
 
-movePiece :: Move -> Board -> Board 
+movePiece :: Move -> Board -> Board
 movePiece (KingsideCastling color) board
     = placePiece ('f', row) (Piece Rook color)
     $ deletePiece ('h', row)
@@ -72,3 +72,90 @@ movePiece (KingsideCastling color) board
     $ deletePiece ('e', row) board
     where
         row = if color == White then 1 else 8
+
+movePiece (QueensideCastling color) board
+    = placePiece ('d', row) (Piece Rook color)
+    $ deletePiece ('a', row)
+    $ placePiece ('c', row) (Piece King color)
+    $ deletePiece ('e', row) board
+    where
+        row = if color == White then 1 else 8
+
+movePiece (EnPassant piece@(Piece _ color) from@(_, fromRow) to@(toCol, _)) board
+    = placePiece to piece
+    $ deletePiece from
+    $ deletePiece (toCol, fromRow) board
+
+movePiece (Move piece from to) board = placePiece to piece $ deletePiece from board
+
+movePiece (Capture piece from to) board =  placePiece to piece $ deletePiece from board
+
+movePiece (Promotion from to piece) board = placePiece to piece $ deletePiece from board
+
+movePiece (CapturePromotion from to piece) board = placePiece to piece $ deletePiece from board
+
+whitePawnMoveSquares :: Square -> [Square]
+whitePawnMoveSquares square@(col, row) = if row == 2 then [(col, 3), (col, 4)] else [(col, row + 1)]
+
+blackPawnMoveSquares :: Square -> [Square]
+blackPawnMoveSquares square@(col, row) = if row == 7 then [(col, 6), (col, 5)] else [(col, row - 1)]
+
+pawnMoveSquares :: Square -> Color -> [Square]
+pawnMoveSquares square color = if color == White then whitePawnMoveSquares square else blackPawnMoveSquares square
+
+pawnMoveFreeSquares :: Square -> Board -> Color -> [Square]
+pawnMoveFreeSquares square@(col, row) board color
+    | length squares == 2 = if isTaken (head squares) board
+                    then []
+                    else
+                        if isTaken (last squares) board
+                            then [head squares] 
+                            else squares
+    | otherwise = if isTaken (head squares) board then [] else squares
+    where
+        squares = if color == White then whitePawnMoveSquares square else blackPawnMoveSquares square
+
+whitePawnCaptures :: Square -> Board -> [Move]
+whitePawnCaptures from@(col, row) board
+    | row == 7  = [cp p | cp <- map (CapturePromotion from) squaresTakenByBlack, p <- [whiteQueen, whiteRook, whiteBishop, whiteKnight]]
+    | otherwise = map (Capture whitePawn from) squaresTakenByBlack
+    where
+        squaresTakenByBlack = filter (\s -> isTakenBy s Black board) [(pred col, succ row), (succ col, succ row)]
+
+blackPawnCaptures :: Square -> Board -> [Move]
+blackPawnCaptures from@(col, row) board
+    | row == 2  = [cp p | cp <- map (CapturePromotion from) squaresTakenByWhite, p <- [blackQueen, blackRook, blackBishop, blackKnight]]
+    | otherwise = map (Capture blackPawn from) squaresTakenByWhite
+    where
+        squaresTakenByWhite = filter (\s -> isTakenBy s White board) [(pred col, pred row), (succ col, pred row)]
+
+whitePawnMoves :: Square -> Board -> [Move]
+whitePawnMoves square@(col, row) board = whitePawnCaptures square board ++ moves
+    where 
+        pawnMoves = pawnMoveFreeSquares square board White
+        moves = concatMap (\s -> if row /= 7 then [Move whitePawn square s] else [Promotion square s whiteQueen, Promotion square s whiteRook, Promotion square s whiteBishop, Promotion square s whiteKnight]) pawnMoves
+
+blackPawnMoves :: Square -> Board -> [Move]
+blackPawnMoves square@(col, row) board = blackPawnCaptures square board ++ moves
+    where 
+        pawnMoves = pawnMoveFreeSquares square board Black
+        moves = concatMap (\s -> if row /= 2 then [Move blackPawn square s] else [Promotion square s blackQueen, Promotion square s blackRook, Promotion square s blackBishop, Promotion square s blackKnight]) pawnMoves
+      
+isTaken :: Square -> Board -> Bool
+isTaken square board = isTakenBy square White board || isTakenBy square Black board
+
+isTakenBy :: Square -> Color -> Board -> Bool
+isTakenBy square color (Board squares) = case M.lookup square squares of
+    Nothing -> False
+    Just (Piece _ c) -> color == c
+
+pieceSquares :: Board -> Color -> [Square]
+pieceSquares board@(Board squares) color = map fst $ filter (\(_, Piece _ c) -> c == color) $ M.toList squares
+
+possibleMoves :: Board -> Square -> [Move]
+possibleMoves board@(Board squares) square = case M.lookup square squares of
+    Nothing             -> []
+    Just (Piece Pawn color) -> whitePawnMoves square board 
+
+allPossibleMoves :: Board -> Color -> [Move]
+allPossibleMoves board color = undefined  -- .. $ pieceSquares board color

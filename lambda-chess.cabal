@@ -26,7 +26,6 @@ source-repository head
 library
   exposed-modules:
       Core
-      Lib
   other-modules:
       Paths_lambda_chess
   hs-source-dirs:
@@ -53,6 +52,7 @@ test-suite lambda-chess-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      CoreSpec
       Paths_lambda_chess
   hs-source-dirs:
       test
@@ -60,5 +60,6 @@ test-suite lambda-chess-test
   build-depends:
       base >=4.7 && <5
     , containers
+    , hspec
     , lambda-chess
   default-language: Haskell2010
