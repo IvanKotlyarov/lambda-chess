@@ -18,6 +18,9 @@ data Piece = Piece PieceType Color
 
 type Square = (Char, Int)
 
+cols :: [Char]
+cols = ['a' .. 'h']
+
 data Board = Board (M.Map Square Piece)
   deriving (Eq, Show)
 
@@ -57,6 +60,18 @@ blackKing = Piece King Black
 
 emptyBoard :: Board
 emptyBoard = Board M.empty
+
+initialBoard :: Board
+initialBoard = Board $ M.fromList (whitePawns ++ pieces White ++ blackPawns ++ pieces Black)
+    where
+        whitePawns = map (\c -> ((c, 2), whitePawn)) cols
+        blackPawns = map (\c -> ((c, 7), blackPawn)) cols
+        row color = if color == White then 1 else 8
+        pieces :: Color -> [(Square, Piece)]
+        pieces color = zipWith (\c p -> ((c, row color), p)) cols 
+                [ Piece Rook color, Piece Knight color, Piece Bishop color, Piece Queen color
+                , Piece King color, Piece Bishop color, Piece Knight color, Piece Rook color
+                ]
 
 placePiece :: Square -> Piece -> Board -> Board
 placePiece square piece (Board squares) = Board $ M.insert square piece squares
@@ -144,8 +159,8 @@ blackPawnMoves :: Square -> Board -> [Move]
 blackPawnMoves square@(col, row) board = blackPawnCaptures square board ++ moves
     where
         pawnMoves = pawnMoveFreeSquares square board Black
-        moves = concatMap (\s -> if row /= 2 
-                                    then [Move blackPawn square s] 
+        moves = concatMap (\s -> if row /= 2
+                                    then [Move blackPawn square s]
                                     else promotionMoves Black square s) pawnMoves
 
 isTaken :: Square -> Board -> Bool
@@ -166,4 +181,4 @@ possibleMoves board@(Board squares) square = case M.lookup square squares of
     Just (Piece Pawn Black) -> blackPawnMoves square board
 
 allPossibleMoves :: Board -> Color -> [Move]
-allPossibleMoves board color = undefined  -- .. $ pieceSquares board color
+allPossibleMoves board color = concatMap (possibleMoves board) $ pieceSquares board color
