@@ -100,16 +100,13 @@ whitePawnMoveSquares square@(col, row) = if row == 2 then [(col, 3), (col, 4)] e
 blackPawnMoveSquares :: Square -> [Square]
 blackPawnMoveSquares square@(col, row) = if row == 7 then [(col, 6), (col, 5)] else [(col, row - 1)]
 
-pawnMoveSquares :: Square -> Color -> [Square]
-pawnMoveSquares square color = if color == White then whitePawnMoveSquares square else blackPawnMoveSquares square
-
 pawnMoveFreeSquares :: Square -> Board -> Color -> [Square]
 pawnMoveFreeSquares square@(col, row) board color
     | length squares == 2 = if isTaken (head squares) board
                     then []
                     else
                         if isTaken (last squares) board
-                            then [head squares] 
+                            then [head squares]
                             else squares
     | otherwise = if isTaken (head squares) board then [] else squares
     where
@@ -117,30 +114,40 @@ pawnMoveFreeSquares square@(col, row) board color
 
 whitePawnCaptures :: Square -> Board -> [Move]
 whitePawnCaptures from@(col, row) board
-    | row == 7  = [cp p | cp <- map (CapturePromotion from) squaresTakenByBlack, p <- [whiteQueen, whiteRook, whiteBishop, whiteKnight]]
+    | row == 7  = [cp p | cp <- map (CapturePromotion from) squaresTakenByBlack, p <- promotionPieces White]
     | otherwise = map (Capture whitePawn from) squaresTakenByBlack
     where
         squaresTakenByBlack = filter (\s -> isTakenBy s Black board) [(pred col, succ row), (succ col, succ row)]
 
 blackPawnCaptures :: Square -> Board -> [Move]
 blackPawnCaptures from@(col, row) board
-    | row == 2  = [cp p | cp <- map (CapturePromotion from) squaresTakenByWhite, p <- [blackQueen, blackRook, blackBishop, blackKnight]]
+    | row == 2  = [cp p | cp <- map (CapturePromotion from) squaresTakenByWhite, p <- promotionPieces Black]
     | otherwise = map (Capture blackPawn from) squaresTakenByWhite
     where
         squaresTakenByWhite = filter (\s -> isTakenBy s White board) [(pred col, pred row), (succ col, pred row)]
 
+promotionPieces :: Color -> [Piece]
+promotionPieces color = map (`Piece` color) [Queen, Rook, Bishop, Knight]
+
+promotionMoves :: Color  -> Square -> Square -> [Move]
+promotionMoves color from to = map (Promotion from to) $ promotionPieces color
+
 whitePawnMoves :: Square -> Board -> [Move]
 whitePawnMoves square@(col, row) board = whitePawnCaptures square board ++ moves
-    where 
+    where
         pawnMoves = pawnMoveFreeSquares square board White
-        moves = concatMap (\s -> if row /= 7 then [Move whitePawn square s] else [Promotion square s whiteQueen, Promotion square s whiteRook, Promotion square s whiteBishop, Promotion square s whiteKnight]) pawnMoves
+        moves = concatMap (\s -> if row /= 7
+                                    then [Move whitePawn square s]
+                                    else promotionMoves White square s) pawnMoves
 
 blackPawnMoves :: Square -> Board -> [Move]
 blackPawnMoves square@(col, row) board = blackPawnCaptures square board ++ moves
-    where 
+    where
         pawnMoves = pawnMoveFreeSquares square board Black
-        moves = concatMap (\s -> if row /= 2 then [Move blackPawn square s] else [Promotion square s blackQueen, Promotion square s blackRook, Promotion square s blackBishop, Promotion square s blackKnight]) pawnMoves
-      
+        moves = concatMap (\s -> if row /= 2 
+                                    then [Move blackPawn square s] 
+                                    else promotionMoves Black square s) pawnMoves
+
 isTaken :: Square -> Board -> Bool
 isTaken square board = isTakenBy square White board || isTakenBy square Black board
 
@@ -155,7 +162,8 @@ pieceSquares board@(Board squares) color = map fst $ filter (\(_, Piece _ c) -> 
 possibleMoves :: Board -> Square -> [Move]
 possibleMoves board@(Board squares) square = case M.lookup square squares of
     Nothing             -> []
-    Just (Piece Pawn color) -> whitePawnMoves square board 
+    Just (Piece Pawn White) -> whitePawnMoves square board
+    Just (Piece Pawn Black) -> blackPawnMoves square board
 
 allPossibleMoves :: Board -> Color -> [Move]
 allPossibleMoves board color = undefined  -- .. $ pieceSquares board color
