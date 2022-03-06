@@ -179,6 +179,7 @@ possibleMoves board@(Board squares) square = case M.lookup square squares of
     Nothing             -> []
     Just (Piece Pawn White) -> whitePawnMoves square board
     Just (Piece Pawn Black) -> blackPawnMoves square board
+    _                       -> []
 
 allPossibleMoves :: Board -> Color -> [Move]
 allPossibleMoves board color = concatMap (possibleMoves board) $ pieceSquares board color
