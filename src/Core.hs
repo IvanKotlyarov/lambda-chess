@@ -1,5 +1,6 @@
 module Core where
 
+import           Data.Maybe (fromJust, isJust)
 import qualified Data.Map as M
 
 -- ADT - Algebraic Data-Type 
@@ -21,15 +22,18 @@ type Square = (Char, Int)
 cols :: [Char]
 cols = ['a' .. 'h']
 
-data Board = Board (M.Map Square Piece)
+data Board = Board (M.Map Square Piece) (Maybe Square)
   deriving (Eq, Show)
+
+squares :: Board -> M.Map Square Piece
+squares board@(Board sqs _) = sqs
 
 -- d8=Q   -- простое продвижение
 -- cxd8=Q -- взятие с последующим продвижением
 
 data Move
     = Move Piece Square Square
-    -- | DoubleSquare Square
+    | DoubleSquare Square Square
     | Capture Piece Square Square
     | Promotion Square Square Piece
     | CapturePromotion Square Square Piece
@@ -59,55 +63,63 @@ blackQueen = Piece Queen Black
 blackKing = Piece King Black
 
 emptyBoard :: Board
-emptyBoard = Board M.empty
+emptyBoard = Board M.empty Nothing
 
 initialBoard :: Board
-initialBoard = Board $ M.fromList (whitePawns ++ pieces White ++ blackPawns ++ pieces Black)
+initialBoard = Board (M.fromList (whitePawns ++ pieces White ++ blackPawns ++ pieces Black)) Nothing
     where
         whitePawns = map (\c -> ((c, 2), whitePawn)) cols
         blackPawns = map (\c -> ((c, 7), blackPawn)) cols
         row color = if color == White then 1 else 8
         pieces :: Color -> [(Square, Piece)]
-        pieces color = zipWith (\c p -> ((c, row color), p)) cols 
+        pieces color = zipWith (\c p -> ((c, row color), p)) cols
                 [ Piece Rook color, Piece Knight color, Piece Bishop color, Piece Queen color
                 , Piece King color, Piece Bishop color, Piece Knight color, Piece Rook color
                 ]
 
 placePiece :: Square -> Piece -> Board -> Board
-placePiece square piece (Board squares) = Board $ M.insert square piece squares
+placePiece square piece (Board squares enPassant) = Board (M.insert square piece squares) enPassant
 
 deletePiece :: Square -> Board -> Board
-deletePiece square (Board squares) = Board $ M.delete square squares
+deletePiece square (Board squares enPassant) = Board (M.delete square squares) enPassant
 
 movePiece :: Move -> Board -> Board
-movePiece (KingsideCastling color) board
+movePiece (KingsideCastling color) (Board sqs _)
     = placePiece ('f', row) (Piece Rook color)
     $ deletePiece ('h', row)
     $ placePiece ('g', row) (Piece King color)
-    $ deletePiece ('e', row) board
+    $ deletePiece ('e', row) (Board sqs Nothing)
     where
         row = if color == White then 1 else 8
 
-movePiece (QueensideCastling color) board
+movePiece (QueensideCastling color) (Board sqs _)
     = placePiece ('d', row) (Piece Rook color)
     $ deletePiece ('a', row)
     $ placePiece ('c', row) (Piece King color)
-    $ deletePiece ('e', row) board
+    $ deletePiece ('e', row) (Board sqs Nothing)
     where
         row = if color == White then 1 else 8
 
-movePiece (EnPassant piece@(Piece _ color) from@(_, fromRow) to@(toCol, _)) board
+movePiece (DoubleSquare from@(fromCol, fromRow) to@(toCol, _)) board
+    = Board sqs $ Just enPassant
+    where
+        sqs = squares $ placePiece to (if fromRow == 2 then whitePawn else blackPawn)
+            $ deletePiece from
+            $ deletePiece (toCol, fromRow) board
+        enPassant = if fromRow == 2 then (fromCol, succ fromRow) else (fromCol, pred fromRow)
+
+movePiece (EnPassant piece@(Piece _ color) from@(_, fromRow) to@(toCol, _)) (Board sqs _)
     = placePiece to piece
     $ deletePiece from
-    $ deletePiece (toCol, fromRow) board
+    $ deletePiece (toCol, fromRow) (Board sqs Nothing)
 
-movePiece (Move piece from to) board = placePiece to piece $ deletePiece from board
+movePiece (Move piece from to) (Board sqs _) = placePiece to piece $ deletePiece from (Board sqs Nothing)
 
-movePiece (Capture piece from to) board =  placePiece to piece $ deletePiece from board
+movePiece (Capture piece from to) (Board sqs _) =  placePiece to piece $ deletePiece from (Board sqs Nothing)
 
 movePiece (Promotion from to piece) board = placePiece to piece $ deletePiece from board
 
-movePiece (CapturePromotion from to piece) board = placePiece to piece $ deletePiece from board
+movePiece (CapturePromotion from to piece) (Board sqs _) = placePiece to piece $ deletePiece from (Board sqs Nothing)
 
 whitePawnMoveSquares :: Square -> [Square]
 whitePawnMoveSquares square@(col, row) = if row == 2 then [(col, 3), (col, 4)] else [(col, row + 1)]
@@ -148,34 +160,42 @@ promotionMoves :: Color  -> Square -> Square -> [Move]
 promotionMoves color from to = map (Promotion from to) $ promotionPieces color
 
 whitePawnMoves :: Square -> Board -> [Move]
-whitePawnMoves square@(col, row) board = whitePawnCaptures square board ++ moves
+whitePawnMoves square@(col, row) board@(Board _ enPassant) = whitePawnCaptures square board ++ moves 
+                                                           ++ [EnPassant whitePawn square $ fromJust enPassant | isJust enPassant]
     where
         pawnMoves = pawnMoveFreeSquares square board White
-        moves = concatMap (\s -> if row /= 7
-                                    then [Move whitePawn square s]
+
+        moves = concatMap (\s@(c, r)-> if row /= 7
+                                    then
+                                        if (r - row) == 2
+                                            then [DoubleSquare square s]
+                                            else [Move whitePawn square s]
                                     else promotionMoves White square s) pawnMoves
+
 
 blackPawnMoves :: Square -> Board -> [Move]
 blackPawnMoves square@(col, row) board = blackPawnCaptures square board ++ moves
     where
         pawnMoves = pawnMoveFreeSquares square board Black
-        moves = concatMap (\s -> if row /= 2
-                                    then [Move blackPawn square s]
+        moves = concatMap (\s@(c, r) -> if row /= 2
+                                    then if (row - r) == 2
+                                            then [DoubleSquare square s]
+                                            else  [Move blackPawn square s]
                                     else promotionMoves Black square s) pawnMoves
 
 isTaken :: Square -> Board -> Bool
 isTaken square board = isTakenBy square White board || isTakenBy square Black board
 
 isTakenBy :: Square -> Color -> Board -> Bool
-isTakenBy square color (Board squares) = case M.lookup square squares of
+isTakenBy square color (Board squares _) = case M.lookup square squares of
     Nothing -> False
     Just (Piece _ c) -> color == c
 
 pieceSquares :: Board -> Color -> [Square]
-pieceSquares board@(Board squares) color = map fst $ filter (\(_, Piece _ c) -> c == color) $ M.toList squares
+pieceSquares board@(Board squares _) color = map fst $ filter (\(_, Piece _ c) -> c == color) $ M.toList squares
 
 possibleMoves :: Board -> Square -> [Move]
-possibleMoves board@(Board squares) square = case M.lookup square squares of
+possibleMoves board@(Board squares _) square = case M.lookup square squares of
     Nothing             -> []
     Just (Piece Pawn White) -> whitePawnMoves square board
     Just (Piece Pawn Black) -> blackPawnMoves square board

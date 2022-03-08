@@ -43,19 +43,19 @@ spec = do
 
     describe "whitePawnMoves" $ do
         it "moves forward by two squares from initial posision" $ do
-            whitePawnMoves ('b', 2) emptyBoard `shouldBe` [Move whitePawn ('b', 2) ('b', 3), Move whitePawn ('b', 2) ('b', 4)]
+            whitePawnMoves ('b', 2) emptyBoard `shouldBe` [Move whitePawn ('b', 2) ('b', 3), DoubleSquare ('b', 2) ('b', 4)]
         it "captures black piece" $ do
-            whitePawnMoves ('b', 2) $ placePiece ('c', 3) blackPawn emptyBoard 
-            `shouldBe` 
-            [Capture whitePawn ('b', 2) ('c', 3), Move whitePawn ('b', 2) ('b', 3), Move whitePawn ('b', 2) ('b', 4)]
-        
-        it "does not capture white piece" $ do
-            whitePawnMoves ('b', 2) $ placePiece ('c', 3) whitePawn emptyBoard 
+            whitePawnMoves ('b', 2) $ placePiece ('c', 3) blackPawn emptyBoard
             `shouldBe`
-            [Move whitePawn ('b', 2) ('b', 3), Move whitePawn ('b', 2) ('b', 4)]
-        
+            [Capture whitePawn ('b', 2) ('c', 3), Move whitePawn ('b', 2) ('b', 3), DoubleSquare ('b', 2) ('b', 4)]
+
+        it "does not capture white piece" $ do
+            whitePawnMoves ('b', 2) $ placePiece ('c', 3) whitePawn emptyBoard
+            `shouldBe`
+            [Move whitePawn ('b', 2) ('b', 3), DoubleSquare ('b', 2) ('b', 4)]
+
         it "promotes with and without captures from 7th row" $ do
-            whitePawnMoves ('b', 7) $ placePiece ('c', 8) blackRook emptyBoard 
+            whitePawnMoves ('b', 7) $ placePiece ('c', 8) blackRook emptyBoard
             `shouldBe`
             [CapturePromotion ('b', 7) ('c', 8) whiteQueen,
             CapturePromotion ('b', 7) ('c', 8) whiteRook,
@@ -65,22 +65,27 @@ spec = do
             Promotion ('b', 7) ('b', 8) whiteRook,
             Promotion ('b', 7) ('b', 8) whiteBishop,
             Promotion ('b', 7) ('b', 8) whiteKnight]
+        
+        it "returns correct en-passant move" $ do 
+            whitePawnMoves ('b', 5) $ movePiece (DoubleSquare ('a', 7) ('a', 5)) emptyBoard 
+            `shouldBe` 
+            [Move whitePawn ('b', 5) ('b', 6), EnPassant whitePawn ('b', 5) ('a', 6)]
 
     describe "blackPawnMoves" $ do
         it "moves forward by two squares from initial posision" $ do
-            blackPawnMoves ('b', 7) emptyBoard `shouldBe` [Move blackPawn ('b', 7) ('b', 6), Move blackPawn ('b', 7) ('b', 5)]
+            blackPawnMoves ('b', 7) emptyBoard `shouldBe` [Move blackPawn ('b', 7) ('b', 6), DoubleSquare ('b', 7) ('b', 5)]
         it "captures white piece" $ do
-            blackPawnMoves ('b', 7) $ placePiece ('c', 6) whitePawn emptyBoard 
-            `shouldBe` 
-            [Capture blackPawn ('b', 7) ('c', 6), Move blackPawn ('b', 7) ('b', 6), Move blackPawn ('b', 7) ('b', 5)]
-        
-        it "does not capture black piece" $ do
-            blackPawnMoves ('b', 7) $ placePiece ('c', 6) blackPawn emptyBoard 
+            blackPawnMoves ('b', 7) $ placePiece ('c', 6) whitePawn emptyBoard
             `shouldBe`
-            [Move blackPawn ('b', 7) ('b', 6), Move blackPawn ('b', 7) ('b', 5)]
-        
+            [Capture blackPawn ('b', 7) ('c', 6), Move blackPawn ('b', 7) ('b', 6), DoubleSquare ('b', 7) ('b', 5)]
+
+        it "does not capture black piece" $ do
+            blackPawnMoves ('b', 7) $ placePiece ('c', 6) blackPawn emptyBoard
+            `shouldBe`
+            [Move blackPawn ('b', 7) ('b', 6), DoubleSquare ('b', 7) ('b', 5)]
+
         it "promotes with and without captures from 2th row" $ do
-            blackPawnMoves ('b', 2) $ placePiece ('c', 1) whiteRook emptyBoard 
+            blackPawnMoves ('b', 2) $ placePiece ('c', 1) whiteRook emptyBoard
             `shouldBe`
             [CapturePromotion ('b', 2) ('c', 1) blackQueen,
             CapturePromotion ('b', 2) ('c', 1) blackRook,
@@ -92,5 +97,5 @@ spec = do
             Promotion ('b', 2) ('b', 1) blackKnight]
     describe "allPossibleMoves" $ do
         it "returns white pawn possible moves" $ do
-            allPossibleMoves (placePiece ('e', 2) whitePawn emptyBoard) White 
-            `shouldBe` [Move whitePawn ('e', 2) ('e', 3), Move whitePawn ('e', 2) ('e', 4)]
+            allPossibleMoves (placePiece ('e', 2) whitePawn emptyBoard) White
+            `shouldBe` [Move whitePawn ('e', 2) ('e', 3), DoubleSquare ('e', 2) ('e', 4)]
