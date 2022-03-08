@@ -95,6 +95,13 @@ spec = do
             Promotion ('b', 2) ('b', 1) blackRook,
             Promotion ('b', 2) ('b', 1) blackBishop,
             Promotion ('b', 2) ('b', 1) blackKnight]
+        
+        it "returns correct en-passant move" $ do 
+            blackPawnMoves ('b', 4) $ movePiece (DoubleSquare ('a', 2) ('a', 4)) emptyBoard 
+            `shouldBe` 
+            [Move blackPawn ('b', 4) ('b', 3), EnPassant blackPawn ('b', 4) ('a', 3)]
+
+
     describe "allPossibleMoves" $ do
         it "returns white pawn possible moves" $ do
             allPossibleMoves (placePiece ('e', 2) whitePawn emptyBoard) White

@@ -174,7 +174,8 @@ whitePawnMoves square@(col, row) board@(Board _ enPassant) = whitePawnCaptures s
 
 
 blackPawnMoves :: Square -> Board -> [Move]
-blackPawnMoves square@(col, row) board = blackPawnCaptures square board ++ moves
+blackPawnMoves square@(col, row) board@(Board _ enPassant) = blackPawnCaptures square board ++ moves
+                                                           ++ [EnPassant blackPawn square $ fromJust enPassant | isJust enPassant]
     where
         pawnMoves = pawnMoveFreeSquares square board Black
         moves = concatMap (\s@(c, r) -> if row /= 2
