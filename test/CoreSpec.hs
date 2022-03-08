@@ -2,6 +2,7 @@ module CoreSpec where
 
 import Test.Hspec
 import Core
+import Core (Move(DoubleSquare))
 
 spec :: Spec
 spec = do
@@ -70,6 +71,11 @@ spec = do
             whitePawnMoves ('b', 5) $ movePiece (DoubleSquare ('a', 7) ('a', 5)) emptyBoard 
             `shouldBe` 
             [Move whitePawn ('b', 5) ('b', 6), EnPassant whitePawn ('b', 5) ('a', 6)]
+        
+        it "doesnt returns en-passant move" $ do 
+            whitePawnMoves ('h', 5) $ movePiece (DoubleSquare ('a', 2) ('a', 4)) emptyBoard
+            `shouldBe`
+            [Move whitePawn ('h', 5) ('h', 6)]
 
     describe "blackPawnMoves" $ do
         it "moves forward by two squares from initial posision" $ do
@@ -100,7 +106,7 @@ spec = do
             blackPawnMoves ('b', 4) $ movePiece (DoubleSquare ('a', 2) ('a', 4)) emptyBoard 
             `shouldBe` 
             [Move blackPawn ('b', 4) ('b', 3), EnPassant blackPawn ('b', 4) ('a', 3)]
-
+        
 
     describe "allPossibleMoves" $ do
         it "returns white pawn possible moves" $ do

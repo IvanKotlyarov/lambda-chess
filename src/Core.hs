@@ -139,12 +139,23 @@ pawnMoveFreeSquares square@(col, row) board color
     where
         squares = if color == White then whitePawnMoveSquares square else blackPawnMoveSquares square
 
+whitePawnCaptureSquares :: Square -> [Square]
+whitePawnCaptureSquares ('a', row) = [('b', succ row)]
+whitePawnCaptureSquares ('h', row) = [('g', succ row)]
+whitePawnCaptureSquares (col, row) = [(pred col, succ row), (succ col, succ row)]
+
+
 whitePawnCaptures :: Square -> Board -> [Move]
 whitePawnCaptures from@(col, row) board
     | row == 7  = [cp p | cp <- map (CapturePromotion from) squaresTakenByBlack, p <- promotionPieces White]
     | otherwise = map (Capture whitePawn from) squaresTakenByBlack
     where
-        squaresTakenByBlack = filter (\s -> isTakenBy s Black board) [(pred col, succ row), (succ col, succ row)]
+        squaresTakenByBlack = filter (\s -> isTakenBy s Black board) $ whitePawnCaptureSquares from
+
+blackPawnCaptureSquares :: Square -> [Square]
+blackPawnCaptureSquares ('a', row) = [('b', pred row)]
+blackPawnCaptureSquares ('h', row) = [('g', pred row)]
+blackPawnCaptureSquares (col, row) = [(pred col, pred row), (succ col, pred row)]
 
 blackPawnCaptures :: Square -> Board -> [Move]
 blackPawnCaptures from@(col, row) board
@@ -160,11 +171,13 @@ promotionMoves :: Color  -> Square -> Square -> [Move]
 promotionMoves color from to = map (Promotion from to) $ promotionPieces color
 
 whitePawnMoves :: Square -> Board -> [Move]
-whitePawnMoves square@(col, row) board@(Board _ enPassant) = whitePawnCaptures square board ++ moves 
-                                                           ++ [EnPassant whitePawn square $ fromJust enPassant | isJust enPassant]
+whitePawnMoves square@(col, row) board@(Board _ maybeEnPassant)
+    =  whitePawnCaptures square board
+    ++ moves 
+    ++ [EnPassant whitePawn square enPassant | isJust maybeEnPassant && enPassant `elem` whitePawnCaptureSquares square]
     where
+        enPassant = fromJust maybeEnPassant
         pawnMoves = pawnMoveFreeSquares square board White
-
         moves = concatMap (\s@(c, r)-> if row /= 7
                                     then
                                         if (r - row) == 2
@@ -174,9 +187,12 @@ whitePawnMoves square@(col, row) board@(Board _ enPassant) = whitePawnCaptures s
 
 
 blackPawnMoves :: Square -> Board -> [Move]
-blackPawnMoves square@(col, row) board@(Board _ enPassant) = blackPawnCaptures square board ++ moves
-                                                           ++ [EnPassant blackPawn square $ fromJust enPassant | isJust enPassant]
+blackPawnMoves square@(col, row) board@(Board _ maybeEnPassant) 
+    = blackPawnCaptures square board 
+    ++ moves
+    ++ [EnPassant blackPawn square enPassant | isJust maybeEnPassant && enPassant `elem` blackPawnCaptureSquares square]
     where
+        enPassant = fromJust maybeEnPassant
         pawnMoves = pawnMoveFreeSquares square board Black
         moves = concatMap (\s@(c, r) -> if row /= 2
                                     then if (row - r) == 2
