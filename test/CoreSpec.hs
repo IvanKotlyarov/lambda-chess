@@ -2,7 +2,7 @@ module CoreSpec where
 
 import Test.Hspec
 import Core
-import Core (Move(DoubleSquare))
+import Core (Move(DoubleSquare), knightMovesSquares)
 
 spec :: Spec
 spec = do
@@ -112,3 +112,9 @@ spec = do
         it "returns white pawn possible moves" $ do
             allPossibleMoves (placePiece ('e', 2) whitePawn emptyBoard) White
             `shouldBe` [Move whitePawn ('e', 2) ('e', 3), DoubleSquare ('e', 2) ('e', 4)]
+    
+    describe "knightMovesSquares" $ do 
+        it "returns knight geometric moves" $ do 
+            knightMovesSquares ('d', 5) `shouldBe` [('e',7),('f',6),('f',4),('e',3),('c',3),('b',4),('b',6),('c',7)]
+        it "returns correct geometric knight moves" $ do
+            knightMovesSquares ('a', 1) `shouldBe` [('b', 3), ('c', 2)]

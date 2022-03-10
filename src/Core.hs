@@ -77,6 +77,9 @@ initialBoard = Board (M.fromList (whitePawns ++ pieces White ++ blackPawns ++ pi
                 , Piece King color, Piece Bishop color, Piece Knight color, Piece Rook color
                 ]
 
+isOnBoard :: Square -> Bool
+isOnBoard square@(col, row) = if (col `elem` ['a' .. 'h']) && (row `elem` [1 .. 8]) then True else False
+
 placePiece :: Square -> Piece -> Board -> Board
 placePiece square piece (Board squares enPassant) = Board (M.insert square piece squares) enPassant
 
@@ -173,7 +176,7 @@ promotionMoves color from to = map (Promotion from to) $ promotionPieces color
 whitePawnMoves :: Square -> Board -> [Move]
 whitePawnMoves square@(col, row) board@(Board _ maybeEnPassant)
     =  whitePawnCaptures square board
-    ++ moves 
+    ++ moves
     ++ [EnPassant whitePawn square enPassant | isJust maybeEnPassant && enPassant `elem` whitePawnCaptureSquares square]
     where
         enPassant = fromJust maybeEnPassant
@@ -187,8 +190,8 @@ whitePawnMoves square@(col, row) board@(Board _ maybeEnPassant)
 
 
 blackPawnMoves :: Square -> Board -> [Move]
-blackPawnMoves square@(col, row) board@(Board _ maybeEnPassant) 
-    = blackPawnCaptures square board 
+blackPawnMoves square@(col, row) board@(Board _ maybeEnPassant)
+    = blackPawnCaptures square board
     ++ moves
     ++ [EnPassant blackPawn square enPassant | isJust maybeEnPassant && enPassant `elem` blackPawnCaptureSquares square]
     where
@@ -199,6 +202,12 @@ blackPawnMoves square@(col, row) board@(Board _ maybeEnPassant)
                                             then [DoubleSquare square s]
                                             else  [Move blackPawn square s]
                                     else promotionMoves Black square s) pawnMoves
+
+knightMovesSquares :: Square -> [Square]
+knightMovesSquares square@(c, r) = concatMap (\s -> [s | isOnBoard s]) [(succ c, succ $ succ r), (succ $ succ c, succ r),
+                                                                  (succ $ succ c, pred r), (succ c, pred $ pred r),
+                                                                  (pred c, pred $ pred r), (pred $ pred c, pred r),
+                                                                  (pred $ pred c, succ r), (pred c, succ $ succ r)]
 
 isTaken :: Square -> Board -> Bool
 isTaken square board = isTakenBy square White board || isTakenBy square Black board
