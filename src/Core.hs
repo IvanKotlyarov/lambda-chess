@@ -22,6 +22,9 @@ type Square = (Char, Int)
 cols :: [Char]
 cols = ['a' .. 'h']
 
+rows :: [Int]
+rows = [1 .. 8]
+
 data Board = Board (M.Map Square Piece) (Maybe Square)
   deriving (Eq, Show)
 
@@ -78,7 +81,10 @@ initialBoard = Board (M.fromList (whitePawns ++ pieces White ++ blackPawns ++ pi
                 ]
 
 isOnBoard :: Square -> Bool
-isOnBoard square@(col, row) = if (col `elem` ['a' .. 'h']) && (row `elem` [1 .. 8]) then True else False
+isOnBoard (col, row)
+  -- col `elem` cols && row `elem` rows
+  -- a bit faster:
+  = col >= 'a' && col <= 'h' && row >= 1 && row <= 8 
 
 placePiece :: Square -> Piece -> Board -> Board
 placePiece square piece (Board squares enPassant) = Board (M.insert square piece squares) enPassant
@@ -204,11 +210,17 @@ blackPawnMoves square@(col, row) board@(Board _ maybeEnPassant)
                                     else promotionMoves Black square s) pawnMoves
 
 knightMovesSquares :: Square -> [Square]
-knightMovesSquares square@(c, r) = concatMap (\s -> [s | isOnBoard s]) [(succ c, succ $ succ r), (succ $ succ c, succ r),
-                                                                  (succ $ succ c, pred r), (succ c, pred $ pred r),
-                                                                  (pred c, pred $ pred r), (pred $ pred c, pred r),
-                                                                  (pred $ pred c, succ r), (pred c, succ $ succ r)]
-
+knightMovesSquares (c, r) = filter isOnBoard
+    [ (succ c, succ $ succ r)
+    , (succ $ succ c, succ r)
+    , (succ $ succ c, pred r)
+    , (succ c, pred $ pred r)
+    , (pred c, pred $ pred r)
+    , (pred $ pred c, pred r)
+    , (pred $ pred c, succ r)
+    , (pred c, succ $ succ r)
+    ]
+    
 isTaken :: Square -> Board -> Bool
 isTaken square board = isTakenBy square White board || isTakenBy square Black board
 
