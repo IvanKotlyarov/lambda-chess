@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 module Core where
 
 import           Data.Maybe (fromJust, isJust)
@@ -28,9 +29,11 @@ rows = [1 .. 8]
 data Board = Board (M.Map Square Piece) (Maybe Square)
   deriving (Eq, Show)
 
+findPiece :: Board -> Square -> Maybe Piece
+findPiece (Board squares _) square = M.lookup square squares
+
 squares :: Board -> M.Map Square Piece
 squares board@(Board sqs _) = sqs
-
 -- d8=Q   -- простое продвижение
 -- cxd8=Q -- взятие с последующим продвижением
 
@@ -44,6 +47,15 @@ data Move
     | KingsideCastling Color
     | QueensideCastling Color
     deriving (Eq, Show)
+
+toSquare :: Move -> Square
+toSquare move@(Move _ _ s) = s
+toSquare move@(DoubleSquare _ s) = s
+toSquare move@(Capture _ _ s) = s
+toSquare move@(Promotion _ s _) = s
+toSquare move@(CapturePromotion _ s _) = s
+toSquare move@(EnPassant _ _ s) = s
+toSquare move = undefined
 
 other :: Color -> Color
 other White = Black
@@ -84,7 +96,7 @@ isOnBoard :: Square -> Bool
 isOnBoard (col, row)
   -- col `elem` cols && row `elem` rows
   -- a bit faster:
-  = col >= 'a' && col <= 'h' && row >= 1 && row <= 8 
+  = col >= 'a' && col <= 'h' && row >= 1 && row <= 8
 
 placePiece :: Square -> Piece -> Board -> Board
 placePiece square piece (Board squares enPassant) = Board (M.insert square piece squares) enPassant
@@ -153,7 +165,6 @@ whitePawnCaptureSquares ('a', row) = [('b', succ row)]
 whitePawnCaptureSquares ('h', row) = [('g', succ row)]
 whitePawnCaptureSquares (col, row) = [(pred col, succ row), (succ col, succ row)]
 
-
 whitePawnCaptures :: Square -> Board -> [Move]
 whitePawnCaptures from@(col, row) board
     | row == 7  = [cp p | cp <- map (CapturePromotion from) squaresTakenByBlack, p <- promotionPieces White]
@@ -220,7 +231,127 @@ knightMovesSquares (c, r) = filter isOnBoard
     , (pred $ pred c, succ r)
     , (pred c, succ $ succ r)
     ]
-    
+
+whiteKnightMoves :: Square -> Board -> [Move]
+whiteKnightMoves square board = map (\s -> if isTakenBy s Black board
+                                            then Capture whiteKnight square s
+                                            else Move whiteKnight square s)
+                                            (filter (\s -> not $ isTakenBy s White board) (knightMovesSquares square))
+
+blackKnightMoves :: Square -> Board -> [Move]
+blackKnightMoves square board = map (\s -> if isTakenBy s White board
+                                            then Capture blackKnight square s
+                                            else Move blackKnight square s)
+                                            (filter (\s -> not $ isTakenBy s Black board) (knightMovesSquares square))
+
+kingMovesSquares :: Square -> [Square]
+kingMovesSquares (c, r) = filter isOnBoard [(c, succ r), (succ c, succ r),
+                                            (succ c, r), (succ c, pred r),
+                                            (c, pred r), (pred c, pred r),
+                                            (pred c, r), (pred c, succ r)]
+
+whiteKingMoves :: Square -> Board -> [Move]
+whiteKingMoves square board = map (\s -> if isTakenBy s Black board
+                                            then Capture whiteKnight square s
+                                            else Move whiteKing square s)  $ filter (`notElem` capturesSquares) $ kingMovesSquares square
+    where
+        captures = piecesCaptures board Black
+        capturesSquares = map toSquare captures
+
+blackKingMoves :: Square -> Board -> [Move]
+blackKingMoves square board = map (\s -> if isTakenBy s White board
+                                            then Capture blackKnight square s
+                                            else Move blackKing square s)  $ filter (`notElem` capturesSquares) $ kingMovesSquares square
+    where
+        captures = piecesCaptures board White
+        capturesSquares = map toSquare captures
+
+rookMovesSquares :: Square -> [[Square]]
+rookMovesSquares square@(c, r) = [top, down, right, left]
+    where
+        top = filter (/= square) (zip [c, c, c, c, c, c, c, c] [r .. 8])
+        down = filter (/= square) (zip [c, c, c, c, c, c, c, c] [1 .. r])
+        right = filter (/= square) (zip [c .. 'h'] [r, r, r, r, r, r, r, r])
+        left = filter (/= square) (zip ['a' .. c] [r, r, r, r, r, r, r, r])
+
+whiteRookMoves :: Square -> Board -> [Move]
+whiteRookMoves square board = map (\s -> if isTakenBy s Black board
+                                            then Capture whiteRook square s
+                                            else Move whiteRook square s)  (top ++ down ++ right ++ left)
+    where
+        sqs = rookMovesSquares square
+        top = filterAllEmptyOrFirstOpposite board White (head sqs)
+        down = filterAllEmptyOrFirstOpposite board White (sqs !! 1)
+        right = filterAllEmptyOrFirstOpposite board White (sqs !! 2)
+        left = filterAllEmptyOrFirstOpposite board White (sqs !! 3)
+
+blackRookMoves :: Square -> Board -> [Move]
+blackRookMoves square board = map (\s -> if isTakenBy s White board
+                                            then Capture blackRook square s
+                                            else Move blackRook square s) (top ++ down ++ right ++ left)
+    where
+        sqs = rookMovesSquares square
+        top = filterAllEmptyOrFirstOpposite board Black (head sqs)
+        down = filterAllEmptyOrFirstOpposite board Black (sqs !! 1)
+        right = filterAllEmptyOrFirstOpposite board Black (sqs !! 2)
+        left = filterAllEmptyOrFirstOpposite board Black (sqs !! 3)
+
+bishopTopSquares :: Square -> [Square] -> [Square]
+bishopTopSquares square@(c, r) sqs = if not $ isOnBoard square then filter (/= square) sqs
+                                                                else bishopTopSquares (succ c, succ r) (sqs ++ [square])
+
+bishopDownSquares :: Square -> [Square] -> [Square]
+bishopDownSquares square@(c, r) sqs = if not $ isOnBoard square then filter (/= square) sqs
+                                                                else bishopDownSquares (pred c, pred r) (sqs ++ [square])
+
+bishopRightSquares :: Square -> [Square] -> [Square]
+bishopRightSquares square@(c, r) sqs = if not $ isOnBoard square then filter (/= square) sqs
+                                                                else bishopRightSquares (succ c, pred r) (sqs ++ [square])
+
+bishopLeftSquares :: Square -> [Square] -> [Square]
+bishopLeftSquares square@(c, r) sqs = if not $ isOnBoard square then filter (/= square) sqs
+                                                                else bishopLeftSquares (pred c, succ r) (sqs ++ [square])
+
+whiteBishopMoves :: Square -> Board -> [Move]
+whiteBishopMoves square board = map (\s -> if isTakenBy s Black board
+                                            then Capture whiteBishop square s
+                                            else Move whiteBishop square s)  (top ++ down ++ right ++ left)
+    where
+        top = filterAllEmptyOrFirstOpposite board White (filter (/= square) (bishopTopSquares square []))
+        down = filterAllEmptyOrFirstOpposite board White (filter (/= square) (bishopDownSquares square []))
+        right = filterAllEmptyOrFirstOpposite board White (filter (/= square) (bishopRightSquares square []))
+        left = filterAllEmptyOrFirstOpposite board White (filter (/= square) (bishopLeftSquares square []))
+
+blackBishopMoves :: Square -> Board -> [Move]
+blackBishopMoves square board = map (\s -> if isTakenBy s White board
+                                            then Capture blackBishop square s
+                                            else Move blackBishop square s)  (top ++ down ++ right ++ left)
+    where
+        top = filterAllEmptyOrFirstOpposite board Black (filter (/= square) (bishopTopSquares square []))
+        down = filterAllEmptyOrFirstOpposite board Black (filter (/= square) (bishopDownSquares square []))
+        right = filterAllEmptyOrFirstOpposite board Black (filter (/= square) (bishopRightSquares square []))
+        left = filterAllEmptyOrFirstOpposite board Black (filter (/= square) (bishopLeftSquares square []))
+
+whiteQueenMoves :: Square -> Board -> [Move]
+whiteQueenMoves square board = map (\m -> if not (isCapture m) then Move whiteQueen square $ toSquare m
+                                                                else Capture whiteQueen square $ toSquare m)
+                                    (whiteBishopMoves square board ++ whiteRookMoves square board)
+
+isCapture :: Move -> Bool
+isCapture Capture {} = True
+isCapture _ = False
+
+blackQueenMoves :: Square -> Board -> [Move]
+blackQueenMoves square board = map (\m -> if not (isCapture m) then Move blackQueen square $ toSquare m
+                                                                else Capture blackQueen square $ toSquare m)
+                                    (blackBishopMoves square board ++ blackRookMoves square board)
+
+filterAllEmptyOrFirstOpposite :: Board -> Color -> [Square] -> [Square]
+filterAllEmptyOrFirstOpposite board color [] = []
+filterAllEmptyOrFirstOpposite board color (square:squares) = case findPiece board square of
+  Nothing          -> square : filterAllEmptyOrFirstOpposite board color squares
+  Just (Piece _ c) -> [square | c /= color]
+
 isTaken :: Square -> Board -> Bool
 isTaken square board = isTakenBy square White board || isTakenBy square Black board
 
@@ -237,7 +368,51 @@ possibleMoves board@(Board squares _) square = case M.lookup square squares of
     Nothing             -> []
     Just (Piece Pawn White) -> whitePawnMoves square board
     Just (Piece Pawn Black) -> blackPawnMoves square board
+    Just (Piece Knight White) -> whiteKnightMoves square board
+    Just (Piece Knight Black) -> blackKnightMoves square board
+    Just (Piece King White) -> whiteKingMoves square board
+    Just (Piece King Black) -> blackKingMoves square board
+    Just (Piece Bishop White) -> whiteBishopMoves square board
+    Just (Piece Bishop Black) -> blackBishopMoves square board
+    Just (Piece Rook White) -> whiteRookMoves square board
+    Just (Piece Rook Black) -> blackRookMoves square board
+    Just (Piece Queen White) -> whiteQueenMoves square board
+    Just (Piece Queen Black) -> blackQueenMoves square board
     _                       -> []
 
+pieceCaptures :: Board -> Square -> [Move]
+pieceCaptures board@(Board squares _) square = case M.lookup square squares of
+    Nothing             -> []
+    Just (Piece Pawn White) -> map (Capture whitePawn square) $ whitePawnCaptureSquares square
+    Just (Piece Pawn Black) -> map (Capture blackPawn square) $ blackPawnCaptureSquares square
+    Just (Piece Knight White) -> whiteKnightMoves square board
+    Just (Piece Knight Black) -> blackKnightMoves square board
+    Just (Piece King White) -> map (Capture whiteKing square) (kingMovesSquares square)
+    Just (Piece King Black) -> map (Capture blackKing square) (kingMovesSquares square)
+    Just (Piece Bishop White) -> whiteBishopMoves square board
+    Just (Piece Bishop Black) -> blackBishopMoves square board
+    Just (Piece Rook White) -> whiteRookMoves square board
+    Just (Piece Rook Black) -> blackRookMoves square board
+    Just (Piece Queen White) -> whiteQueenMoves square board
+    Just (Piece Queen Black) -> blackQueenMoves square board
+    _                       -> []
+
+piecesCaptures :: Board -> Color -> [Move]
+piecesCaptures board color = concatMap (pieceCaptures board) $ pieceSquares board color
+
 allPossibleMoves :: Board -> Color -> [Move]
-allPossibleMoves board color = concatMap (possibleMoves board) $ pieceSquares board color
+allPossibleMoves board color = filter (\m -> not (isCheck (movePiece m board) color)) 
+                                        (concatMap (possibleMoves board) $ pieceSquares board color)
+
+kingSquare :: Board -> Color -> Square
+kingSquare (Board squares _) color = fst $ head $ filter (\(s, p) -> p == Piece King color) $ M.toList squares
+
+isCheck :: Board -> Color -> Bool
+isCheck board color = square `elem` capturesSquares
+    where
+        square = kingSquare board color
+        captures = piecesCaptures board Black
+        capturesSquares = map toSquare captures
+
+isMate :: Board -> Color -> Bool
+isMate board color = undefined

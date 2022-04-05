@@ -2,7 +2,7 @@ module CoreSpec where
 
 import Test.Hspec
 import Core
-import Core (Move(DoubleSquare), knightMovesSquares)
+import Core (whiteKnightMoves, whiteKingMoves, whiteBishopMoves)
 
 spec :: Spec
 spec = do
@@ -125,3 +125,74 @@ spec = do
 
         it "returns correct geometric knight moves for e1" $ do
             knightMovesSquares ('e', 1) `shouldBe` [('f', 3), ('g', 2), ('c', 2), ('d', 3)]
+    
+    describe "whiteKnightMoves" $ do
+        it "returns correct knight possible moves from d4" $ do
+            whiteKnightMoves ('d', 4) emptyBoard `shouldBe` 
+                [Move (Piece Knight White) ('d',4) ('e',6),Move (Piece Knight White) ('d',4) ('f',5),Move (Piece Knight White) ('d',4) ('f',3),Move (Piece Knight White) ('d',4) ('e',2),Move (Piece Knight White) ('d',4) ('c',2),Move (Piece Knight White) ('d',4) ('b',3),Move (Piece Knight White) ('d',4) ('b',5),Move (Piece Knight White) ('d',4) ('c',6)]
+        it "returns correct knight possible moves, but there is white pawn" $ do
+            whiteKnightMoves ('d', 4) (placePiece ('e', 6) whitePawn emptyBoard) `shouldBe`
+                [Move (Piece Knight White) ('d',4) ('f',5),Move (Piece Knight White) ('d',4) ('f',3),Move (Piece Knight White) ('d',4) ('e',2),Move (Piece Knight White) ('d',4) ('c',2),Move (Piece Knight White) ('d',4) ('b',3),Move (Piece Knight White) ('d',4) ('b',5),Move (Piece Knight White) ('d',4) ('c',6)]
+    
+    describe "blackKnightMoves" $ do
+        it "returns correct knight possible moves from d4" $ do
+            blackKnightMoves ('d', 4) emptyBoard `shouldBe` 
+                [Move (Piece Knight Black) ('d',4) ('e',6),Move (Piece Knight Black) ('d',4) ('f',5),Move (Piece Knight Black) ('d',4) ('f',3),Move (Piece Knight Black) ('d',4) ('e',2),Move (Piece Knight Black) ('d',4) ('c',2),Move (Piece Knight Black) ('d',4) ('b',3),Move (Piece Knight Black) ('d',4) ('b',5),Move (Piece Knight Black) ('d',4) ('c',6)]
+        it "returns correct knight possible moves, but there is black pawn" $ do
+            blackKnightMoves ('d', 4) (placePiece ('e', 6) blackPawn emptyBoard) `shouldBe`
+                [Move (Piece Knight Black) ('d',4) ('f',5),Move (Piece Knight Black) ('d',4) ('f',3),Move (Piece Knight Black) ('d',4) ('e',2),Move (Piece Knight Black) ('d',4) ('c',2),Move (Piece Knight Black) ('d',4) ('b',3),Move (Piece Knight Black) ('d',4) ('b',5),Move (Piece Knight Black) ('d',4) ('c',6)]
+        
+    describe "whiteKingMoves" $ do 
+        it "returns correct king moves from d4" $ do
+            whiteKingMoves ('d', 4) emptyBoard `shouldBe`
+                [Move (Piece King White) ('d',4) ('d',5),Move (Piece King White) ('d',4) ('e',5),Move (Piece King White) ('d',4) ('e',4),Move (Piece King White) ('d',4) ('e',3),Move (Piece King White) ('d',4) ('d',3),Move (Piece King White) ('d',4) ('c',3),Move (Piece King White) ('d',4) ('c',4),Move (Piece King White) ('d',4) ('c',5)]
+
+        it "returns correct king moves from d4 but there is black pawn on d6" $ do
+            whiteKingMoves ('d', 4) (placePiece ('d', 6) blackPawn emptyBoard) `shouldBe`
+                [Move (Piece King White) ('d', 4) ('d', 5), Move (Piece King White) ('d', 4) ('e', 4), Move (Piece King White) ('d', 4) ('e', 3), Move (Piece King White) ('d', 4) ('d', 3), Move (Piece King White) ('d', 4) ('c', 3), Move (Piece King White) ('d', 4) ('c', 4)]
+
+    describe "blackKingMoves" $ do 
+        it "returns correct king moves from d4" $ do
+            blackKingMoves ('d', 4) emptyBoard `shouldBe`
+                [Move (Piece King Black) ('d',4) ('d',5),Move (Piece King Black) ('d',4) ('e',5),Move (Piece King Black) ('d',4) ('e',4),Move (Piece King Black) ('d',4) ('e',3),Move (Piece King Black) ('d',4) ('d',3),Move (Piece King Black) ('d',4) ('c',3),Move (Piece King Black) ('d',4) ('c',4),Move (Piece King Black) ('d',4) ('c',5)]
+
+        it "returns correct king moves from d4 but there is black pawn on d6" $ do
+            blackKingMoves ('d', 4) (placePiece ('d', 2) whitePawn emptyBoard) `shouldBe`
+                [Move (Piece King Black) ('d',4) ('d',5),Move (Piece King Black) ('d',4) ('e',5),Move (Piece King Black) ('d',4) ('e',4),Move (Piece King Black) ('d',4) ('d',3),Move (Piece King Black) ('d',4) ('c',4),Move (Piece King Black) ('d',4) ('c',5)]
+        
+    describe "whiteBishopMoves" $ do
+        it "returns correct bishop moves from d4" $ do
+            whiteBishopMoves ('d', 4) emptyBoard `shouldBe`
+                [Move (Piece Bishop White) ('d',4) ('e',5), Move (Piece Bishop White) ('d',4) ('f',6),
+                Move (Piece Bishop White) ('d',4) ('g',7), Move (Piece Bishop White) ('d',4) ('h',8),
+                Move (Piece Bishop White) ('d',4) ('c',3),Move (Piece Bishop White) ('d',4) ('b',2),
+                Move (Piece Bishop White) ('d',4) ('a',1),Move (Piece Bishop White) ('d',4) ('e',3),
+                Move (Piece Bishop White) ('d',4) ('f',2),Move (Piece Bishop White) ('d',4) ('g',1),
+                Move (Piece Bishop White) ('d',4) ('c',5),Move (Piece Bishop White) ('d',4) ('b',6),
+                Move (Piece Bishop White) ('d',4) ('a',7)]
+        
+        it "returns correct bishop moves from d4, but theres our pawn on e5" $ do
+            whiteBishopMoves ('d', 4) (placePiece ('e', 5) whitePawn emptyBoard) `shouldBe`
+                [Move (Piece Bishop White) ('d',4) ('c',3),Move (Piece Bishop White) ('d',4) ('b',2),
+                    Move (Piece Bishop White) ('d',4) ('a',1),Move (Piece Bishop White) ('d',4) ('e',3),
+                    Move (Piece Bishop White) ('d',4) ('f',2),Move (Piece Bishop White) ('d',4) ('g',1),
+                    Move (Piece Bishop White) ('d',4) ('c',5),Move (Piece Bishop White) ('d',4) ('b',6),
+                    Move (Piece Bishop White) ('d',4) ('a',7)]
+    describe "blackBishopMoves" $ do
+        it "returns correct bishop moves from d4" $ do
+            blackBishopMoves ('d', 4) emptyBoard `shouldBe`
+                [Move (Piece Bishop Black) ('d',4) ('e',5), Move (Piece Bishop Black) ('d',4) ('f',6),
+                Move (Piece Bishop Black) ('d',4) ('g',7), Move (Piece Bishop Black) ('d',4) ('h',8),
+                Move (Piece Bishop Black) ('d',4) ('c',3),Move (Piece Bishop Black) ('d',4) ('b',2),
+                Move (Piece Bishop Black) ('d',4) ('a',1),Move (Piece Bishop Black) ('d',4) ('e',3),
+                Move (Piece Bishop Black) ('d',4) ('f',2),Move (Piece Bishop Black) ('d',4) ('g',1),
+                Move (Piece Bishop Black) ('d',4) ('c',5),Move (Piece Bishop Black) ('d',4) ('b',6),
+                Move (Piece Bishop Black) ('d',4) ('a',7)]
+        
+        it "returns correct bishop moves from d4, but theres our pawn on e5" $ do
+            blackBishopMoves ('d', 4) (placePiece ('e', 5) blackPawn emptyBoard) `shouldBe`
+                [Move (Piece Bishop Black) ('d',4) ('c',3),Move (Piece Bishop Black) ('d',4) ('b',2),
+                    Move (Piece Bishop Black) ('d',4) ('a',1),Move (Piece Bishop Black) ('d',4) ('e',3),
+                    Move (Piece Bishop Black) ('d',4) ('f',2),Move (Piece Bishop Black) ('d',4) ('g',1),
+                    Move (Piece Bishop Black) ('d',4) ('c',5),Move (Piece Bishop Black) ('d',4) ('b',6),
+                    Move (Piece Bishop Black) ('d',4) ('a',7)]
