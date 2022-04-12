@@ -156,7 +156,7 @@ spec = do
             blackKingMoves ('d', 4) emptyBoard `shouldBe`
                 [Move (Piece King Black) ('d',4) ('d',5),Move (Piece King Black) ('d',4) ('e',5),Move (Piece King Black) ('d',4) ('e',4),Move (Piece King Black) ('d',4) ('e',3),Move (Piece King Black) ('d',4) ('d',3),Move (Piece King Black) ('d',4) ('c',3),Move (Piece King Black) ('d',4) ('c',4),Move (Piece King Black) ('d',4) ('c',5)]
 
-        it "returns correct king moves from d4 but there is black pawn on d6" $ do
+        it "returns correct king moves from d4 but there is black pawn on d2" $ do
             blackKingMoves ('d', 4) (placePiece ('d', 2) whitePawn emptyBoard) `shouldBe`
                 [Move (Piece King Black) ('d',4) ('d',5),Move (Piece King Black) ('d',4) ('e',5),Move (Piece King Black) ('d',4) ('e',4),Move (Piece King Black) ('d',4) ('d',3),Move (Piece King Black) ('d',4) ('c',4),Move (Piece King Black) ('d',4) ('c',5)]
         
@@ -196,3 +196,10 @@ spec = do
                     Move (Piece Bishop Black) ('d',4) ('f',2),Move (Piece Bishop Black) ('d',4) ('g',1),
                     Move (Piece Bishop Black) ('d',4) ('c',5),Move (Piece Bishop Black) ('d',4) ('b',6),
                     Move (Piece Bishop Black) ('d',4) ('a',7)]
+    describe "isMate" $ do
+        it "sees mate on board" $ do
+            isMate (placePiece ('a', 1) whiteKing (placePiece ('h', 1) blackRook (placePiece ('g', 2) blackRook emptyBoard))) White 
+                        `shouldBe` True
+        it "is no mate on board" $ do
+            isMate (placePiece ('a', 1) whiteKing (placePiece ('h', 1) blackRook (placePiece ('a', 2) blackRook emptyBoard))) White 
+                        `shouldBe` False

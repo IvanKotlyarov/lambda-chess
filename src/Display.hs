@@ -14,7 +14,7 @@ printRow board row = do
     putStrLn ""
 
 printSquare :: Board -> Square -> IO ()
-printSquare (Board squares _) square =
+printSquare (Board squares _ _ _ _ _ _) square =
     case M.lookup square squares of
         Just p -> putStr $ unicode p
         _      -> putStr " "

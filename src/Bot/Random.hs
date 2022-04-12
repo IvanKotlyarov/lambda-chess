@@ -14,5 +14,4 @@ makeMove :: Board -> Color -> IO Board
 makeMove board color = do
     let moves = allPossibleMoves board color
     move <- randomMove moves
-    print move
     return $ movePiece move board
