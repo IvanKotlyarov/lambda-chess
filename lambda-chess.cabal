@@ -25,10 +25,10 @@ source-repository head
 
 library
   exposed-modules:
+      Bot.Human
       Bot.Random
       Core
       Display
-      Study
   other-modules:
       Paths_lambda_chess
   hs-source-dirs:

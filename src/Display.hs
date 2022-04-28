@@ -3,9 +3,12 @@ module Display where
 import qualified Data.Map as M
 import Core
 import Data.Foldable (traverse_)
+import Data.Char
 
 printBoard :: Board -> IO ()
 printBoard board = do
+    putStrLn $ chr 27 : "[2J"
+    putStrLn $ chr 27 : "[;H"
     mapM_ (printRow board) [8, 7 .. 1]
 
 printRow :: Board -> Int -> IO ()
@@ -14,7 +17,7 @@ printRow board row = do
     putStrLn ""
 
 printSquare :: Board -> Square -> IO ()
-printSquare (Board squares _ _ _ _ _ _) square =
+printSquare (Board squares _ _ _ _ _ _ _ _) square =
     case M.lookup square squares of
         Just p -> putStr $ unicode p
         _      -> putStr " "

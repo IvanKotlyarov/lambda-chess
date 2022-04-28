@@ -1,9 +1,15 @@
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
+{-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Core where
 
-import           Data.Maybe (fromJust, isJust)
+import           Data.Maybe (fromJust, isJust, isNothing)
 import qualified Data.Map as M
 import Debug.Trace
+import Data.Foldable
+import Data.Function
+import Data.List (intercalate, delete)
+import Data.Char
 
 -- ADT - Algebraic Data-Type 
 -- data <Конструктор типа> = <Конструкторы данных>
@@ -27,14 +33,14 @@ cols = ['a' .. 'h']
 rows :: [Int]
 rows = [1 .. 8]
 
-data Board = Board (M.Map Square Piece) (Maybe Square) Bool Bool Bool Bool [Move]
+data Board = Board (M.Map Square Piece) (Maybe Square) Bool Bool Bool Bool [Move] Int Color
   deriving (Eq, Show)
 
 findPiece :: Board -> Square -> Maybe Piece
-findPiece (Board squares _ _ _ _ _ _) square = M.lookup square squares
+findPiece (Board squares _ _ _ _ _ _ _ _) square = M.lookup square squares
 
 squares :: Board -> M.Map Square Piece
-squares board@(Board sqs _ _ _ _ _ _) = sqs
+squares board@(Board sqs _ _ _ _ _ _ _ _) = sqs
 -- d8=Q   -- простое продвижение
 -- cxd8=Q -- взятие с последующим продвижением
 
@@ -79,10 +85,10 @@ blackQueen = Piece Queen Black
 blackKing = Piece King Black
 
 emptyBoard :: Board
-emptyBoard = Board M.empty Nothing False False False False []
+emptyBoard = Board M.empty Nothing False False False False [] 0 White
 
 initialBoard :: Board
-initialBoard = Board (M.fromList (whitePawns ++ pieces White ++ blackPawns ++ pieces Black)) Nothing True True True True []
+initialBoard = Board (M.fromList (whitePawns ++ pieces White ++ blackPawns ++ pieces Black)) Nothing True True True True [] 0 White
     where
         whitePawns = map (\c -> ((c, 2), whitePawn)) cols
         blackPawns = map (\c -> ((c, 7), blackPawn)) cols
@@ -94,7 +100,7 @@ initialBoard = Board (M.fromList (whitePawns ++ pieces White ++ blackPawns ++ pi
                 ]
 
 history :: Board -> [Move]
-history (Board _ _ _ _ _ _ h) = h
+history (Board _ _ _ _ _ _ h _ _) = h
 
 isOnBoard :: Square -> Bool
 isOnBoard (col, row)
@@ -103,78 +109,81 @@ isOnBoard (col, row)
   = col >= 'a' && col <= 'h' && row >= 1 && row <= 8
 
 placePiece :: Square -> Piece -> Board -> Board
-placePiece square piece (Board squares enPassant wkc wqc bkc bqc h) = Board (M.insert square piece squares) enPassant wkc wqc bkc bqc h
+placePiece square piece (Board squares enPassant wkc wqc bkc bqc h cnt c) = Board (M.insert square piece squares) enPassant wkc wqc bkc bqc h cnt c
 
 deletePiece :: Square -> Board -> Board
-deletePiece square (Board squares enPassant wkc wqc bkc bqc h) = Board (M.delete square squares) enPassant wkc wqc bkc bqc h
+deletePiece square (Board squares enPassant wkc wqc bkc bqc h cnt c) = Board (M.delete square squares) enPassant wkc wqc bkc bqc h cnt c
 
 movePiece :: Move -> Board -> Board
-movePiece m@(KingsideCastling White) (Board sqs _ _ _ kingSide queenSide h)
+movePiece m@(KingsideCastling White) (Board sqs _ _ _ kingSide queenSide h cnt _)
     = placePiece ('f', 1) (Piece Rook White)
     $ deletePiece ('h', 1)
     $ placePiece ('g', 1) (Piece King White)
-    $ deletePiece ('e', 1) (Board sqs Nothing False False kingSide queenSide (h ++ [m]))
+    $ deletePiece ('e', 1) (Board sqs Nothing False False kingSide queenSide (h ++ [m]) (cnt + 1) Black)
 
-movePiece m@(KingsideCastling Black) (Board sqs _ kingSide queenSide _ _ h)
+movePiece m@(KingsideCastling Black) (Board sqs _ kingSide queenSide _ _ h cnt _)
     = placePiece ('f', 8) (Piece Rook Black)
     $ deletePiece ('h', 8)
     $ placePiece ('g', 8) (Piece King Black)
-    $ deletePiece ('e', 8) (Board sqs Nothing kingSide queenSide False False (h ++ [m]))
+    $ deletePiece ('e', 8) (Board sqs Nothing kingSide queenSide False False (h ++ [m]) (cnt + 1) White)
 
-movePiece m@(QueensideCastling White) (Board sqs _ _ _ kingSide queenSide h)
+movePiece m@(QueensideCastling White) (Board sqs _ _ _ kingSide queenSide h cnt _)
     = placePiece ('d', 1) (Piece Rook White)
     $ deletePiece ('a', 1)
     $ placePiece ('c', 1) (Piece King White)
-    $ deletePiece ('e', 1) (Board sqs Nothing False False kingSide queenSide (h ++ [m]))
+    $ deletePiece ('e', 1) (Board sqs Nothing False False kingSide queenSide (h ++ [m]) (cnt + 1) Black)
 
-movePiece m@(QueensideCastling Black) (Board sqs _ kingSide queenSide _ _ h)
+movePiece m@(QueensideCastling Black) (Board sqs _ kingSide queenSide _ _ h cnt _)
     = placePiece ('d', 8) (Piece Rook Black)
     $ deletePiece ('a', 8)
     $ placePiece ('c', 8) (Piece King Black)
-    $ deletePiece ('e', 8) (Board sqs Nothing kingSide queenSide False False (h ++ [m]))
+    $ deletePiece ('e', 8) (Board sqs Nothing kingSide queenSide False False (h ++ [m]) (cnt + 1) White)
 
-movePiece m@(DoubleSquare from@(fromCol, fromRow) to@(toCol, _)) board@(Board _ _ wk wq bk bq h)
-    = Board sqs (Just enPassant) wk wq bk bq (h ++ [m])
+movePiece m@(DoubleSquare from@(fromCol, fromRow) to@(toCol, _)) board@(Board _ _ wk wq bk bq h _ c)
+    = Board sqs (Just enPassant) wk wq bk bq (h ++ [m]) 0 (other c)
     where
         sqs = squares $ placePiece to (if fromRow == 2 then whitePawn else blackPawn)
             $ deletePiece from
             $ deletePiece (toCol, fromRow) board
         enPassant = if fromRow == 2 then (fromCol, succ fromRow) else (fromCol, pred fromRow)
 
-movePiece m@(EnPassant piece@(Piece _ color) from@(_, fromRow) to@(toCol, _)) (Board sqs _ wk wq bk bq h)
+movePiece m@(EnPassant piece@(Piece _ color) from@(_, fromRow) to@(toCol, _)) (Board sqs _ wk wq bk bq h _ _)
     = placePiece to piece
     $ deletePiece from
-    $ deletePiece (toCol, fromRow) (Board sqs Nothing wk wq bk bq (h ++ [m]))
+    $ deletePiece (toCol, fromRow) (Board sqs Nothing wk wq bk bq (h ++ [m]) 0 (other color))
 
-movePiece m@(Move (Piece King White) from to) (Board sqs _ _ _ bk bq h)
-    = placePiece to whiteKing $ deletePiece from (Board sqs Nothing False False bk bq (h ++ [m]))
+movePiece m@(Move (Piece King White) from to) (Board sqs _ _ _ bk bq h cnt _)
+    = placePiece to whiteKing $ deletePiece from (Board sqs Nothing False False bk bq (h ++ [m]) (cnt + 1) Black)
 
-movePiece m@(Move (Piece King Black) from to) (Board sqs _ wk wq _ _ h)
-    = placePiece to blackKing $ deletePiece from (Board sqs Nothing wk wq False False (h ++ [m]))
+movePiece m@(Move (Piece King Black) from to) (Board sqs _ wk wq _ _ h cnt _)
+    = placePiece to blackKing $ deletePiece from (Board sqs Nothing wk wq False False (h ++ [m]) (cnt + 1) White)
 
-movePiece m@(Move (Piece Rook White) ('a', 1) to) (Board sqs _ wk _ bk bq h)
-    = placePiece to whiteRook $ deletePiece ('a', 1) (Board sqs Nothing wk False bk bq (h ++ [m]))
+movePiece m@(Move (Piece Rook White) ('a', 1) to) (Board sqs _ wk _ bk bq h cnt _)
+    = placePiece to whiteRook $ deletePiece ('a', 1) (Board sqs Nothing wk False bk bq (h ++ [m]) (cnt + 1) Black)
 
-movePiece m@(Move (Piece Rook White) ('h', 1) to) (Board sqs _ _ wq bk bq h)
-    = placePiece to whiteRook $ deletePiece ('h', 1) (Board sqs Nothing False wq bk bq (h ++ [m]))
+movePiece m@(Move (Piece Rook White) ('h', 1) to) (Board sqs _ _ wq bk bq h cnt _)
+    = placePiece to whiteRook $ deletePiece ('h', 1) (Board sqs Nothing False wq bk bq (h ++ [m]) (cnt + 1) Black)
 
-movePiece m@(Move (Piece Rook Black) ('a', 8) to) (Board sqs _ wk wq bk _ h)
-    = placePiece to blackRook $ deletePiece ('a', 8) (Board sqs Nothing wk wq bk False (h ++ [m]))
+movePiece m@(Move (Piece Rook Black) ('a', 8) to) (Board sqs _ wk wq bk _ h cnt _)
+    = placePiece to blackRook $ deletePiece ('a', 8) (Board sqs Nothing wk wq bk False (h ++ [m]) (cnt + 1) White)
 
-movePiece m@(Move (Piece Rook Black) ('h', 8) to) (Board sqs _ wk wq _ bq h)
-    = placePiece to blackRook $ deletePiece ('h', 8) (Board sqs Nothing wk wq False bq (h ++ [m]))
+movePiece m@(Move (Piece Rook Black) ('h', 8) to) (Board sqs _ wk wq _ bq h cnt _)
+    = placePiece to blackRook $ deletePiece ('h', 8) (Board sqs Nothing wk wq False bq (h ++ [m]) (cnt + 1) White)
 
-movePiece m@(Move piece from to) (Board sqs _ wk wq bk bq h)
-     = placePiece to piece $ deletePiece from (Board sqs Nothing wk wq bk bq (h ++ [m]))
+movePiece m@(Move (Piece Pawn color) from to) (Board sqs _ wk wq bk bq h cnt _)
+    = placePiece to (Piece Pawn color) $ deletePiece from (Board sqs Nothing wk wq bk bq (h ++ [m]) 0 (other color))
 
-movePiece m@(Capture piece from to) (Board sqs _ wk wq bk bq h)
-    = placePiece to piece $ deletePiece from (Board sqs Nothing wk wq bk bq (h ++ [m]))
+movePiece m@(Move piece@(Piece _ color) from to) (Board sqs _ wk wq bk bq h cnt _)
+     = placePiece to piece $ deletePiece from (Board sqs Nothing wk wq bk bq (h ++ [m]) (cnt + 1) (other color))
 
-movePiece m@(Promotion from to piece) board@(Board sqs _ wk wq bk bq h) 
-    = placePiece to piece $ deletePiece from (Board sqs Nothing wk wq bk bq (h ++ [m]))
+movePiece m@(Capture piece from to) (Board sqs _ wk wq bk bq h _ c)
+    = placePiece to piece $ deletePiece from (Board sqs Nothing wk wq bk bq (h ++ [m]) 0 (other c))
 
-movePiece m@(CapturePromotion from to piece) (Board sqs _ wk wq bk bq h)
-     = placePiece to piece $ deletePiece from (Board sqs Nothing wk wq bk bq (h ++ [m]))
+movePiece m@(Promotion from to piece) board@(Board sqs _ wk wq bk bq h _ c)
+    = placePiece to piece $ deletePiece from (Board sqs Nothing wk wq bk bq (h ++ [m]) 0 (other c))
+
+movePiece m@(CapturePromotion from to piece) (Board sqs _ wk wq bk bq h _ c)
+     = placePiece to piece $ deletePiece from (Board sqs Nothing wk wq bk bq (h ++ [m]) 0 (other c))
 
 whitePawnMoveSquares :: Square -> [Square]
 whitePawnMoveSquares square@(col, row) = if row == 2 then [(col, 3), (col, 4)] else [(col, row + 1)]
@@ -225,7 +234,7 @@ promotionMoves :: Color  -> Square -> Square -> [Move]
 promotionMoves color from to = map (Promotion from to) $ promotionPieces color
 
 whitePawnMoves :: Square -> Board -> [Move]
-whitePawnMoves square@(col, row) board@(Board _ maybeEnPassant _ _ _ _ _)
+whitePawnMoves square@(col, row) board@(Board _ maybeEnPassant _ _ _ _ _ _ _)
     =  whitePawnCaptures square board
     ++ moves
     ++ [EnPassant whitePawn square enPassant | isJust maybeEnPassant && enPassant `elem` whitePawnCaptureSquares square]
@@ -241,7 +250,7 @@ whitePawnMoves square@(col, row) board@(Board _ maybeEnPassant _ _ _ _ _)
 
 
 blackPawnMoves :: Square -> Board -> [Move]
-blackPawnMoves square@(col, row) board@(Board _ maybeEnPassant _ _ _ _ _)
+blackPawnMoves square@(col, row) board@(Board _ maybeEnPassant _ _ _ _ _ _ _)
     = blackPawnCaptures square board
     ++ moves
     ++ [EnPassant blackPawn square enPassant | isJust maybeEnPassant && enPassant `elem` blackPawnCaptureSquares square]
@@ -285,28 +294,28 @@ kingMovesSquares (c, r) = filter isOnBoard [(c, succ r), (succ c, succ r),
                                             (pred c, r), (pred c, succ r)]
 
 whiteKingSideCastling :: Board -> Bool
-whiteKingSideCastling b@(Board sqs _ wk _ _ _ _)
+whiteKingSideCastling b@(Board sqs _ wk _ _ _ _ _ _)
         = wk && not (any (\s -> isTaken s b || s `elem` capturesSquares) [('e', 1), ('f', 1), ('g', 1)])
     where
         captures = piecesCaptures b Black
         capturesSquares = map toSquare captures
 
 blackKingSideCastling :: Board -> Bool
-blackKingSideCastling b@(Board sqs _ _ _ bk _ _)
+blackKingSideCastling b@(Board sqs _ _ _ bk _ _ _ _)
         = bk && not (any (\s -> isTaken s b || s `elem` capturesSquares) [('e', 8), ('f', 8), ('g', 8)])
     where
         captures = piecesCaptures b White
         capturesSquares = map toSquare captures
 
 whiteQueenSideCastling :: Board -> Bool
-whiteQueenSideCastling b@(Board sqs _ _ wq _ _ _)
+whiteQueenSideCastling b@(Board sqs _ _ wq _ _ _ _ _)
         = wq && not (any (\s -> isTaken s b || s `elem` capturesSquares) [('e', 1), ('d', 1), ('c', 1)])
     where
         captures = piecesCaptures b Black
         capturesSquares = map toSquare captures
 
 blackQueenSideCastling :: Board -> Bool
-blackQueenSideCastling b@(Board sqs _ _ _ _ bq _)
+blackQueenSideCastling b@(Board sqs _ _ _ _ bq _ _ _)
         = bq && not (any (\s -> isTaken s b || s `elem` capturesSquares) [('e', 8), ('d', 8), ('c', 8)])
     where
         captures = piecesCaptures b White
@@ -424,15 +433,18 @@ isTaken :: Square -> Board -> Bool
 isTaken square board = isTakenBy square White board || isTakenBy square Black board
 
 isTakenBy :: Square -> Color -> Board -> Bool
-isTakenBy square color (Board squares _ _ _ _ _ _) = case M.lookup square squares of
+isTakenBy square color (Board squares _ _ _ _ _ _ _ _) = case M.lookup square squares of
     Nothing -> False
     Just (Piece _ c) -> color == c
 
 pieceSquares :: Board -> Color -> [Square]
-pieceSquares board@(Board squares _ _ _ _ _ _) color = map fst $ filter (\(_, Piece _ c) -> c == color) $ M.toList squares
+pieceSquares board@(Board squares _ _ _ _ _ _ _ _) color = map fst $ filter (\(_, Piece _ c) -> c == color) $ M.toList squares
+
+pieces :: Board -> Color -> [Piece]
+pieces board@(Board squares _ _ _ _ _ _ _ _) color = map snd $ filter (\(_, Piece _ c) -> c == color) $ M.toList squares
 
 possibleMoves :: Board -> Square -> [Move]
-possibleMoves board@(Board squares _ _ _ _ _ _) square = case M.lookup square squares of
+possibleMoves board@(Board squares _ _ _ _ _ _ _ _) square = case M.lookup square squares of
     Nothing             -> []
     Just (Piece Pawn White) -> whitePawnMoves square board
     Just (Piece Pawn Black) -> blackPawnMoves square board
@@ -448,7 +460,7 @@ possibleMoves board@(Board squares _ _ _ _ _ _) square = case M.lookup square sq
     Just (Piece Queen Black) -> blackQueenMoves square board
 
 pieceCaptures :: Board -> Square -> [Move]
-pieceCaptures board@(Board squares _ _ _ _ _ _) square = case M.lookup square squares of
+pieceCaptures board@(Board squares _ _ _ _ _ _ _ _) square = case M.lookup square squares of
     Nothing             -> []
     Just (Piece Pawn White) -> map (Capture whitePawn square) $ whitePawnCaptureSquares square
     Just (Piece Pawn Black) -> map (Capture blackPawn square) $ blackPawnCaptureSquares square
@@ -471,7 +483,7 @@ allPossibleMoves board color = filter (\m -> not (isCheck (movePiece m board) co
                                         (concatMap (possibleMoves board) $ pieceSquares board color)
 
 kingSquare :: Board -> Color -> Square
-kingSquare (Board squares _ _ _ _ _ _) color = fst $ head $ filter (\(s, p) -> p == Piece King color) $ M.toList squares
+kingSquare (Board squares _ _ _ _ _ _ _ _) color = fst $ head $ filter (\(s, p) -> p == Piece King color) $ M.toList squares
 
 isCheck :: Board -> Color -> Bool
 isCheck board color = square `elem` capturesSquares
@@ -485,9 +497,13 @@ isMate board color = null (allPossibleMoves board color) && isCheck board color
 
 isDraw :: Board -> Bool
 isDraw board = null (allPossibleMoves board White) || null (allPossibleMoves board Black) || (length psw == 1 && length psb == 1)
-    where 
-        psw = pieceSquares board White
-        psb = pieceSquares board Black
+        || (delete whiteKing psw == [whiteKnight] && null (delete blackKing psb))
+        || (null (delete whiteKing psw) && delete blackKing psb == [blackKnight])
+        || (delete whiteKing psw == [whiteBishop] && null (delete blackKing psb))
+        || (null (delete whiteKing psw) && delete blackKing psb == [blackBishop])
+    where
+        psw = pieces board White
+        psb = pieces board Black
 
 pgnSquare :: Square -> String
 pgnSquare (c, r) = c : show r
@@ -517,3 +533,123 @@ toPGN moves = unwords $ export 1 moves
     export moveNo []       = []
     export moveNo [w]      = (show moveNo ++ ".") : [pgnMove w]
     export moveNo (w:b:ms) = (show moveNo ++ ".") : pgnMove w : pgnMove b : export (succ moveNo) ms
+
+evalPiece :: Piece -> Int
+evalPiece (Piece Pawn _) = 1
+evalPiece (Piece King _) = 0
+evalPiece (Piece Knight _) = 3
+evalPiece (Piece Bishop _) = 3
+evalPiece (Piece Rook _) = 5
+evalPiece (Piece Queen _) = 9
+
+
+
+evalFn :: Board -> Int
+evalFn board
+  | isMate board White = 999
+  | isMate board Black = 999
+  | isDraw board = 0
+  | otherwise = abs (sum (map evalPiece piecesWhite) - sum (map evalPiece piecesBlack))
+  where
+      piecesWhite = pieces board White
+      piecesBlack = pieces board Black
+
+minimax :: Board -> Int -> Color -> Move
+minimax board depth player = snd (maxValue board depth player)
+
+maxValue :: Board -> Int -> Color -> (Int, Move)
+maxValue board@(Board _ _ _ _ _ _ h _ _) depth player
+    = if isMate board player || isDraw board || (depth == 0) then (evalFn board, last h)
+        else maximumBy (compare `on` fst) (map (maxHelper board (-999) depth player) (allPossibleMoves board player))
+
+maxHelper :: Board -> Int ->  Int -> Color -> Move -> (Int, Move)
+maxHelper board@(Board _ _ _ _ _ _ h _ _) value depth player move = (v2, move)
+    where
+        (v2, a2) = minValue (movePiece move board) (depth - 1) (other player)
+
+minValue :: Board -> Int -> Color -> (Int, Move)
+minValue board@(Board _ _ _ _ _ _ h _ _) depth player
+    = if isMate board player || isDraw board || (depth == 0) then (evalFn board, last h)
+        else  minimumBy (compare `on` fst) (map (minHelper board 999 depth player) (allPossibleMoves board player))
+
+minHelper :: Board -> Int ->  Int -> Color -> Move -> (Int, Move)
+minHelper board@(Board _ _ _ _ _ _ h _ _) value depth player move = (v2, move)
+    where
+        (v2, a2) = maxValue (movePiece move board) (depth - 1) (other player)
+
+enPassantToFEN :: Maybe Square -> String
+enPassantToFEN = maybe "-" pgnSquare
+
+colorToFEN :: Color -> String
+colorToFEN White = "w"
+colorToFEN Black = "b"
+
+castlingToFEN :: Board -> String
+castlingToFEN board@(Board _ _ wk wq bk bq _ _ _) = (if wk then "K" else "") ++ (if wq then "Q" else "") ++ (if bk then "k" else "") ++ (if bq then "q" else "")
+
+toFEN :: Board -> String
+toFEN board@(Board _ enPassant wk wq bk bq h cnt c) = intercalate "/" (map (rowToFEN board) (reverse rows))
+        ++ " " ++ colorToFEN c ++ " " ++ castlingToFEN board ++ " " ++ enPassantToFEN enPassant ++ " " ++ show cnt ++ " " ++ show (length h `div` 2)
+
+rowToFEN :: Board -> Int -> String
+rowToFEN board i = if emptySquares == 0 then fen else fen ++ show emptySquares
+    where
+        sqs = map (, i) cols
+        (emptySquares, fen) = foldl colsToFEN  (0, "") (map (findPiece board) sqs)
+
+colsToFEN (emptyCount, fen) i = case i of
+     Nothing -> (emptyCount + 1, fen)
+     Just p -> (0, fen ++ (if emptyCount == 0 then "" else show emptyCount) ++  exportPiece p)
+
+digitOrNot :: String -> Bool
+digitOrNot "1" = True
+digitOrNot "2" = True
+digitOrNot "3" = True
+digitOrNot "4" = True
+digitOrNot "5" = True
+digitOrNot "6" = True
+digitOrNot "7" = True
+digitOrNot "8" = True
+digitOrNot "9" = True
+digitOrNot _ = False
+
+---colToFEN :: String -> Int -> String
+---ColToFEN string i = if digitOrNot (string !! i) then if digitOrNot (string !! (i + 1) )
+
+exportPiece :: Piece -> String
+exportPiece (Piece Pawn White) = "P"
+exportPiece (Piece Pawn Black) = "p"
+exportPiece (Piece Knight White) = "N"
+exportPiece (Piece Knight Black) = "n"
+exportPiece (Piece Bishop White) = "B"
+exportPiece (Piece Bishop Black) = "b"
+exportPiece (Piece Rook White) = "R"
+exportPiece (Piece Rook Black) = "r"
+exportPiece (Piece Queen White) = "Q"
+exportPiece (Piece Queen Black) = "q"
+exportPiece (Piece King White) = "K"
+exportPiece (Piece King Black) = "k"
+
+importPiece :: Char -> Color -> Piece
+importPiece 'N' color = Piece Knight color
+importPiece 'B' color = Piece Bishop color
+importPiece 'R' color = Piece Rook color
+importPiece 'Q' color = Piece Queen color
+importPiece 'K' color = Piece King color
+
+parseMove :: String -> Color -> Maybe Move
+parseMove [fromCol, '2', toCol, '4'] White 
+    = Just (DoubleSquare (fromCol, 2) (toCol, 4))
+parseMove [fromCol, '7', toCol, '5'] Black
+    = Just (DoubleSquare (fromCol, 7) (toCol, 5))
+parseMove [fromCol, fromRow, toCol, toRow] color = Just (Move (Piece Pawn color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
+parseMove [fromCol, fromRow, 'x', toCol, toRow, '=', piece] color 
+    = Just (CapturePromotion (fromCol, digitToInt fromRow) (toCol, digitToInt toRow) (importPiece piece color))
+parseMove [fromCol, fromRow, 'x', toCol, toRow] color = Just (Capture (Piece Pawn color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
+parseMove [piece, fromCol, fromRow, 'x', toCol, toRow] color = Just (Capture (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
+parseMove [piece, fromCol, fromRow, toCol, toRow] color = Just (Move (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
+parseMove [piece, fromCol, fromRow, 'x', toCol, toRow] color = Just (Capture (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
+parseMove [fromCol, fromRow, toCol, toRow, '=', piece] color = Just (Promotion (fromCol, digitToInt fromRow) (toCol, digitToInt toRow) (importPiece piece color))
+parseMove "O-O-O" color = Just $ QueensideCastling color
+parseMove "O-O" color = Just $ KingsideCastling color
+parseMove _  _ = Nothing
