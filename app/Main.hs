@@ -1,11 +1,12 @@
 module Main where
 
-import Bot.Random
+import Bot.Minimax
 import Display
 import Core
 import Data.Char
 import GHC.Conc (threadDelay)
 import Bot.Human
+import Bot.Random
 
 play bot1 bot2 board color = do
     let bot = if color == White then bot1 else bot2
@@ -28,7 +29,7 @@ play bot1 bot2 board color = do
 main :: IO ()
 main = do
     let bot1 = humanMakeMove
-    let bot2 = makeMove
+    let bot2 = makeMinimaxMove
     play bot1 bot2 initialBoard White
 
     return ()

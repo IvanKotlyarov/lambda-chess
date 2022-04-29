@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Bot.Human
+      Bot.Minimax
       Bot.Random
       Core
       Display
