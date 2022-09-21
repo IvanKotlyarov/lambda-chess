@@ -203,3 +203,50 @@ spec = do
         it "is no mate on board" $ do
             isMate (placePiece ('a', 1) whiteKing (placePiece ('h', 1) blackRook (placePiece ('a', 2) blackRook emptyBoard))) White 
                         `shouldBe` False
+    describe "minimax" $ do 
+        it "mate in 1 move" $ do
+            minimax (placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('h', 7) whiteQueen emptyBoard))) 1 White 
+                        `shouldBe` (Move whiteQueen ('h', 7) ('b', 7))
+    describe "minimax" $ do 
+        it "mate in 1 move" $ do
+            minimax (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('h', 7) blackQueen emptyBoard))) 1 Black 
+                        `shouldBe` (Move blackQueen ('h', 7) ('b', 7))
+    describe "minimax" $ do 
+        it "mate in 5 move" $ do
+            minimax (placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('h', 7) whiteQueen emptyBoard))) 5 White 
+                        `shouldBe` (Move whiteQueen ('h', 7) ('b', 7))
+    describe "minimax" $ do 
+        it "mate in 5 move" $ do
+            minimax (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('h', 7) blackQueen emptyBoard))) 5 Black 
+                        `shouldBe` (Move blackQueen ('h', 7) ('b', 7))
+        it "mate in 3 move" $ do
+            minimax (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('b', 1) blackQueen emptyBoard))) 3 Black 
+                        `shouldBe` (Move blackQueen ('b', 1) ('e', 1))
+        it "mate in 3 move" $ do
+            minimax (placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('b', 1) whiteQueen emptyBoard))) 3 White 
+                        `shouldBe` (Move whiteQueen ('b', 1) ('e', 1))
+        it "mate in 3 moves" $ do 
+            (minimax (placePiece ('a', 7) blackKing (placePiece ('h', 6) whiteRook (placePiece ('g', 5) whiteRook (placePiece ('e', 1) whiteKing emptyBoard)))) 3 White) `shouldBe` (Move whiteRook ('g', 5) ('b', 5))
+        it "mate in 3 moves" $ do
+            print $ minimax (placePiece ('a', 7) blackKing (placePiece ('h', 6) whiteRook (placePiece ('g', 5) whiteRook (placePiece ('e', 1) whiteKing emptyBoard)))) 3 White
+            (minimax (placePiece ('a', 7) blackKing (placePiece ('h', 6) whiteRook (placePiece ('g', 5) whiteRook (placePiece ('e', 1) whiteKing emptyBoard)))) 3 White) `shouldBe` (Move whiteRook ('g', 5) ('b', 5))
+
+    describe "evalFn" $ do 
+        it "base" $ do 
+            evalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('b', 7) blackQueen emptyBoard))) Black 
+                        `shouldBe` 999
+        it "base" $ do 
+            evalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('b', 7) blackQueen emptyBoard))) White 
+                        `shouldBe` -999
+        it "base" $ do 
+            evalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('a', 1) whitePawn emptyBoard))) White
+                        `shouldBe` 1
+        it "base" $ do 
+            evalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('a', 1) whitePawn emptyBoard))) Black
+                        `shouldBe` -1
+        it "base" $ do 
+            evalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('a', 1) blackPawn emptyBoard))) White
+                        `shouldBe` -1
+        it "base" $ do 
+            evalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('a', 1) blackPawn emptyBoard))) Black
+                        `shouldBe` 1

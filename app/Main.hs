@@ -15,7 +15,6 @@ play bot1 bot2 board color = do
     printBoard newBoard
     putStrLn $ show $ last (history newBoard)
 
-    threadDelay 100000
     if isMate newBoard (other color) then do
         putStrLn $ toPGN (history newBoard)
         putStrLn $ show color ++ " won"
