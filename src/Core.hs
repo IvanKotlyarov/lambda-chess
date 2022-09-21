@@ -556,6 +556,7 @@ evalFn board Black
   | isMate board Black = -999
   | isDraw board = 0
   | otherwise = -(sum (map evalPiece piecesWhite) - sum (map evalPiece piecesBlack))
+
   where
       piecesWhite = pieces board White
       piecesBlack = pieces board Black
@@ -645,6 +646,7 @@ importPiece 'K' color = Piece King color
 
 parseMove :: String -> Color -> Maybe Move
 parseMove [fromCol, '2', toCol, '4'] White
+
     = Just (DoubleSquare (fromCol, 2) (toCol, 4))
 parseMove [fromCol, '7', toCol, '5'] Black
     = Just (DoubleSquare (fromCol, 7) (toCol, 5))
