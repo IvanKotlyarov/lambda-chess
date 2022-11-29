@@ -23,7 +23,7 @@ play bot1 bot2 board color = do
         putStrLn $ toPGN (history newBoard)
         putStrLn $ show color ++ " won"
     else
-        if isDraw board then do
+        if isDraw board color then do
             putStrLn $ toPGN (history newBoard)
             putStrLn "Draw"
         else
@@ -31,8 +31,8 @@ play bot1 bot2 board color = do
 
 main :: IO ()
 main = do
-    let bot1 = humanMakeMove
-    let bot2 = makeMinimaxMove
+    let bot1 = makeAlphaBetaMove
+    let bot2 = makeMove
     play bot1 bot2 initialBoard White
 
     return ()

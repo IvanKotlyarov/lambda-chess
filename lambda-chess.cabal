@@ -30,6 +30,7 @@ library
       Bot.Random
       Core
       Display
+      Study
   other-modules:
       Paths_lambda_chess
   hs-source-dirs:
