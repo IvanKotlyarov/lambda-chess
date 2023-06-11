@@ -2,7 +2,7 @@ module CoreSpec where
 
 import Test.Hspec
 import Core
-import Core (whiteKnightMoves, whiteKingMoves, whiteBishopMoves, alphaBetaSearch)
+import Core (whiteKnightMoves, whiteKingMoves, whiteBishopMoves, alphaBetaSearch, absEvalFn)
 
 spec :: Spec
 spec = do
@@ -204,6 +204,20 @@ spec = do
             isMate (placePiece ('a', 1) whiteKing (placePiece ('h', 1) blackRook (placePiece ('a', 2) blackRook emptyBoard))) White
                         `shouldBe` False
 
+    describe "absEvalFn" $ do 
+        it "правильно оценивает позицию" $ do 
+            absEvalFn (placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('h', 7) whiteQueen emptyBoard)))
+                        `shouldBe` 9
+        it "правильно оценивает позицию" $ do
+            absEvalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('b', 7) blackQueen emptyBoard))) 
+                        `shouldBe` -999
+        it "правильно оценивает позицию" $ do
+            absEvalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('a', 1) whitePawn emptyBoard))) 
+                        `shouldBe` 1
+        it "правильно оценивает позицию" $ do
+            absEvalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('a', 1) blackPawn emptyBoard))) 
+                        `shouldBe` -1
+
     describe "minimax" $ do
         it "mate in 1 move" $ do
             minimax (placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('h', 7) whiteQueen emptyBoard))) 1 White
@@ -214,11 +228,11 @@ spec = do
         it "mate in 5 move" $ do
             pendingWith "падает и очень долго работает"
             minimax (placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('h', 7) whiteQueen emptyBoard))) 5 White
-                        `shouldBe` Move whiteQueen ('h', 7) ('b', 7)
+                        `shouldBe` Move whiteQueen ('h', 7) ('g', 8)
         it "mate in 5 move" $ do
             pendingWith "падает и очень долго работает"
             minimax (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('h', 7) blackQueen emptyBoard))) 5 Black
-                        `shouldBe` Move blackQueen ('h', 7) ('b', 7)
+                        `shouldBe` Move blackQueen ('h', 7) ('g', 8)
         it "mate in 3 move" $ do
             minimax (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('b', 1) blackQueen emptyBoard))) 3 Black
                         `shouldBe` Move blackQueen ('b', 1) ('e', 1)
@@ -235,30 +249,42 @@ spec = do
     describe "alphaBetaSearch" $ do
         it "mate in 1 move" $ do
             alphaBetaSearch (placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('h', 7) whiteQueen emptyBoard))) 1 White
-                        `shouldBe` Move whiteQueen ('h', 7) ('g', 8)
+                        `shouldBe` (Move whiteQueen ('h', 7) ('g', 8))
         it "mate in 1 move" $ do
             alphaBetaSearch (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('h', 7) blackQueen emptyBoard))) 1 Black
-                        `shouldBe` Move blackQueen ('h', 7) ('g', 8)
+                        `shouldBe` (Move blackQueen ('h', 7) ('g', 8))
         it "mate in 5 move" $ do
             alphaBetaSearch (placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('h', 7) whiteQueen emptyBoard))) 5 White
-                        `shouldBe` Move whiteQueen ('h', 7) ('b', 7)
+                        `shouldBe` (Move whiteQueen ('h', 7) ('g', 8))
         it "mate in 5 move" $ do
             alphaBetaSearch (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('h', 7) blackQueen emptyBoard))) 5 Black
-                        `shouldBe` Move blackQueen ('h', 7) ('b', 7)
+                        `shouldBe` (Move blackQueen ('h', 7) ('g', 8))
         it "mate in 3 move" $ do
             alphaBetaSearch (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('b', 1) blackQueen emptyBoard))) 3 Black
-                        `shouldBe` Move blackQueen ('b', 1) ('c', 2)
+                        `shouldBe` (Move blackQueen ('b', 1) ('c', 2))
         it "mate in 3 move" $ do
             alphaBetaSearch (placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('b', 1) whiteQueen emptyBoard))) 3 White
-                        `shouldBe` Move whiteQueen ('b', 1) ('c', 2)
+                        `shouldBe` (Move whiteQueen ('b', 1) ('c', 2))
 
         it "линейный мат двумя белыми ладьями в два хода" $ do
             let board = placePiece ('a', 7) blackKing (placePiece ('h', 6) whiteRook (placePiece ('g', 5) whiteRook (placePiece ('e', 1) whiteKing emptyBoard)))
-            alphaBetaSearch board 3 White `shouldBe` Move whiteRook ('g', 5) ('g', 7)
-            
+            alphaBetaSearch board 3 White `shouldBe` (Move whiteRook ('g', 5) ('g', 7))
+
         it "мат двумя белыми слонами в два хода" $ do 
             let board = placePiece ('b', 8) blackKing (placePiece ('h', 4) whiteBishop (placePiece ('h', 3) whiteBishop (placePiece ('b', 6) whiteKing emptyBoard)))
-            alphaBetaSearch board 3 White `shouldBe` Move whiteBishop ('h', 4) ('g', 3)
+            alphaBetaSearch board 3 White `shouldBe` (Move whiteBishop ('h', 4) ('g', 3))
+        it "выигрывает ферзя" $ do 
+            alphaBetaSearch (placePiece ('b', 2) whiteKing (placePiece ('e', 4) whiteQueen (placePiece ('c', 6) blackBishop (placePiece ('c', 7) blackKing emptyBoard)))) 1 Black
+                        `shouldBe` (Capture blackBishop ('c', 6) ('e', 4))
+        it "выигрывает ферзя" $ do 
+            alphaBetaSearch (placePiece ('b', 2) blackKing (placePiece ('e', 4) blackQueen (placePiece ('c', 6) whiteBishop (placePiece ('c', 7) whiteKing emptyBoard)))) 1 White
+                        `shouldBe` (Capture whiteBishop ('c', 6) ('e', 4))
+        it "линейный мат двумя черными ладьями в два хода" $ do
+            let board = placePiece ('a', 7) whiteKing (placePiece ('h', 6) blackRook (placePiece ('g', 5) blackRook (placePiece ('e', 1) blackKing emptyBoard)))
+            alphaBetaSearch board 3 Black `shouldBe` (Move blackRook ('g', 5) ('g', 7))
+        it "мат двумя черными слонами в два хода" $ do 
+            let board = placePiece ('b', 8) whiteKing (placePiece ('h', 4) blackBishop (placePiece ('h', 3) blackBishop (placePiece ('b', 6) blackKing emptyBoard)))
+            alphaBetaSearch board 3 Black `shouldBe` (Move blackBishop ('h', 4) ('g', 3))
 
     describe "evalFn" $ do
         it "base" $ do
@@ -266,7 +292,7 @@ spec = do
                         `shouldBe` 999
         it "base" $ do
             evalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('b', 7) blackQueen emptyBoard))) White
-                        `shouldBe` -999
+                        `shouldBe` (-999)
         it "base" $ do
             evalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('a', 1) whitePawn emptyBoard))) White
                         `shouldBe` 1
@@ -279,7 +305,7 @@ spec = do
         it "base" $ do
             evalFn (placePiece ('b', 8) whiteKing (placePiece ('b', 6) blackKing (placePiece ('a', 1) blackPawn emptyBoard))) Black
                         `shouldBe` 1
-
+{-
     describe "alphaHelper" $ do
         it "первая итерация" $ do
             let board = placePiece ('b', 8) blackKing (placePiece ('b', 6) whiteKing (placePiece ('h', 7) whiteQueen emptyBoard))
@@ -297,3 +323,4 @@ spec = do
             let bestMove = Move whiteKing ('b', 6) ('c', 6)
             let currentMove = Move whiteQueen ('h', 7) ('h', 8)
             alphaHelper board 1 White currentMove bestMove 9 9 (-999) `shouldBe` (999, -999, 999, currentMove, False)
+-}

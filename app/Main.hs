@@ -1,5 +1,8 @@
 module Main where
 
+main = undefined
+
+{-
 import Bot.Minimax
 import Display
 import Core
@@ -36,3 +39,4 @@ main = do
     play bot1 bot2 initialBoard White
 
     return ()
+-}

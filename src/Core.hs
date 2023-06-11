@@ -497,7 +497,7 @@ isMate board color = null (allPossibleMoves board color) && isCheck board color
 
 isDrawWhite :: Board -> Color -> Bool
 isDrawWhite _ Black = False
-isDrawWhite board _ = null (allPossibleMoves board White) 
+isDrawWhite board _ = null (allPossibleMoves board White)
 
 isDrawBlack :: Board -> Color -> Bool
 isDrawBlack _ White = False
@@ -597,39 +597,98 @@ minHelper board@(Board _ _ _ _ _ _ h _ _) depth player move = (-v2, move)
 lastOfQuad :: (Int, Int, Int, Move) -> Move
 lastOfQuad (_, _, _, m) = m
 
-alphaBetaSearch :: Board -> Int -> Color -> Move
-alphaBetaSearch board depth player = lastOfQuad result
-  where result = alphaValue board depth player (-999) (-999)
+absEvalFn :: Board -> Int
+absEvalFn board
+        | isMate board White = -999
+        | isMate board Black = 999
+        | otherwise = sum (map evalPiece piecesWhite) - sum (map evalPiece piecesBlack)
+  where
+      piecesWhite = pieces board White
+      piecesBlack = pieces board Black
+{-
+alphaBetaSearch :: Board -> Int -> Color -> Maybe Move
+alphaBetaSearch board depth White = lastOfQuad $ alphaValue board depth White (-999) 999
+alphaBetaSearch board depth Black = lastOfQuad $ betaValue board depth Black 999 (-999)
 
-alphaValue :: Board -> Int -> Color -> Int -> Int -> (Int, Int, Int, Move)
+alphaValue :: Board -> Int -> Color -> Int -> Int -> (Int, Int, Int, Maybe Move)
 alphaValue board@(Board _ _ _ _ _ _ h _ _) depth player alpha beta
-    = if isMate board player || isDraw board player || depth == 0 then traceShow ("    == terminal!! alpha, beta, evalFn board player, last h", alpha, beta, evalFn board player, last h) (alpha, beta, evalFn board player, last h)
+    | isMate board player || isDraw board player || depth == 0 = (alpha, beta, absEvalFn board, Just $ last h)
+    | otherwise = (alpha', beta', v', best')
+  where
+
+    (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then result else alphaHelper board depth player current best v a b) (alpha, beta, -999, Nothing, False) allMoves
+    allMoves = allPossibleMoves board player
+
+alphaHelper :: Board -> Int -> Color -> Move -> Maybe Move -> Int -> Int -> Int -> (Int, Int, Int, Maybe Move, Bool)
+alphaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta = traceShow (alpha'', beta', v'', bestMove', break) (alpha'', beta', v'', bestMove', break)
+  where
+    (alpha', beta', v', m') = betaValue (movePiece currentMove board) (depth - 1) (other player) alpha beta
+    (alpha'', v'', bestMove') =
+        if v' > v then (max alpha' v', v', m')
+            else (alpha', v, bestMove)
+
+    break = v'' > beta'
+    --break = False
+
+betaValue :: Board -> Int -> Color -> Int -> Int -> (Int, Int, Int, Maybe Move)
+betaValue board@(Board _ _ _ _ _ _ h _ _) depth player alpha beta
+    | isMate board player || isDraw board player || depth == 0 = (alpha, beta, absEvalFn board, Just $ last h)
+    | otherwise = (alpha', beta', v', best')
+  where
+    (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then result else betaHelper board depth player current best v a b) (alpha, beta, 999, Nothing, False) allMoves
+    allMoves = allPossibleMoves board player
+
+betaHelper :: Board -> Int -> Color -> Move -> Maybe Move -> Int -> Int -> Int -> (Int, Int, Int, Maybe Move, Bool)
+betaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta = (alpha', beta'', v'', bestMove', break)
+  where
+    (alpha', beta', v', m') = alphaValue (movePiece currentMove board) (depth - 1) (other player) alpha beta
+    (beta'', v'', bestMove') = 
+        if v' < v then (min beta' v', v', m')
+            else (beta', v, bestMove)
+
+    break = alpha' < v''
+    --break = False
+ -}
+
+debugOffset :: Int -> Int -> String
+debugOffset maxDepth depth = foldl (\r _ -> r ++ "  ") (show depth) [1..maxDepth - depth]
+
+alphaBetaSearch :: Board -> Int -> Color -> Move
+alphaBetaSearch board depth White = lastOfQuad $ alphaValue board depth White (-999) 999
+alphaBetaSearch board depth Black = lastOfQuad $ betaValue board depth Black (-999) 999
+
+alphaValue :: Board -> Int -> Color -> Int -> Int -> (Int, Int, Int, Move)  
+alphaValue board@(Board _ _ _ _ _ _ h _ _) depth player alpha beta
+    = if isMate board player || isDraw board player || depth == 0 then (alpha, beta, absEvalFn board, last h)
         else (alpha', beta', v', best')
     where
-        (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then traceShow ("skipping alphaHelper", depth, current, a, b, v, best) result else traceShow ("entering alphaHelper", depth, current, a, b, v, best) alphaHelper board depth player current best v a b) (alpha, beta, -999, head allMoves, False) allMoves
-        allMoves = allPossibleMoves board player
+        (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then result else alphaHelper board depth player current best v a b) (alpha, beta, -999, head allMoves, False) allMoves
+        allMoves = traceShow (debugOffset 5 depth, allPossibleMoves board player) allPossibleMoves board player
 
 alphaHelper :: Board -> Int -> Color -> Move -> Move -> Int -> Int -> Int -> (Int, Int, Int, Move, Bool)
-alphaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta = traceShow ("== depth, current, best, a, b, v", depth, currentMove, bestMove', alpha'', beta', v'') (alpha'', beta', v'', bestMove', break)
+alphaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta = traceShow (debugOffset 5 depth, alpha'', beta', v'', bestMove', break) (alpha'', beta', v'', bestMove', break)
     where
         (alpha', beta', v', m') = betaValue (movePiece currentMove board) (depth - 1) (other player) alpha beta
-        (alpha'', v'', bestMove') = if (-v') > v then (max alpha' (-v'), -v', currentMove) else (alpha', v, bestMove)
-        break = False -- v'' >= -beta'
+        (alpha'', v'', bestMove') = if v' > v then (max alpha' v', v', currentMove) else (alpha', v, bestMove)
+        break = v'' >= beta'
 
 betaValue :: Board -> Int -> Color -> Int -> Int -> (Int, Int, Int, Move)
 betaValue board@(Board _ _ _ _ _ _ h _ _) depth player alpha beta
-    = if isMate board player || isDraw board player || depth == 0 then (alpha, beta, evalFn board player, last h)
+    = if isMate board player || isDraw board player || depth == 0 then (alpha, beta, absEvalFn board, last h)
         else (alpha', beta', v', best')
     where
-        (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then result else betaHelper board depth player current best v a b) (alpha, beta, -999, head allMoves, False) allMoves
-        allMoves = allPossibleMoves board player
+        (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then result else betaHelper board depth player current best v a b) (alpha, beta, 999, head allMoves, False) allMoves
+        --allMoves = allPossibleMoves board player
+        allMoves = traceShow (debugOffset 5 depth, allPossibleMoves board player) allPossibleMoves board player
+
 
 betaHelper :: Board -> Int ->  Color -> Move -> Move -> Int -> Int -> Int -> (Int, Int, Int, Move, Bool)
-betaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta = traceShow ("-- depth, current, best, a, b, v", depth, currentMove, bestMove', alpha', beta'', v'') (alpha', beta'', v'', bestMove', break)
+betaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta = traceShow (debugOffset 5 depth, alpha', beta'', v'', bestMove', break)  (alpha', beta'', v'', bestMove', break)
     where
         (alpha', beta', v', m') = alphaValue (movePiece currentMove board) (depth - 1) (other player) alpha beta
-        (beta'', v'', bestMove') = if (-v') > v then traceShow ("--   depth,beta, -v' ", depth,beta', -v') (max beta' (-v'), -v', currentMove) else (beta', v, bestMove)
-        break = False -- v'' >=   -alpha'
+        (beta'', v'', bestMove') = if v' < v then (min beta' v', v', currentMove) else (beta', v, bestMove)
+        break = v'' <= alpha'
+
 
 {-
 runAlphaHelper :: (Move, Move, Bool) -> [Move] -> Board -> Int -> Color -> Int -> Int -> (Move, Move, Int, Bool)

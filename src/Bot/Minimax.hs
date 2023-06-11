@@ -1,5 +1,5 @@
 module Bot.Minimax where
-
+{-
 import Control.Monad.Random (getRandomR)
 
 import Core
@@ -22,3 +22,4 @@ makeAlphaBetaMove :: Board -> Color -> IO Board
 makeAlphaBetaMove board color = do
     move <- alphaBetaMove board color
     return $ movePiece move board
+-}
