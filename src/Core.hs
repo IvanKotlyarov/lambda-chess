@@ -1,6 +1,10 @@
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use guards" #-}
 module Core where
 
 import           Data.Maybe (fromJust, isJust, isNothing)
@@ -10,6 +14,7 @@ import Data.Foldable
 import Data.Function
 import Data.List (intercalate, delete, sortOn)
 import Data.Char
+import Data.Text (Text, pack, splitOn, unpack)
 
 -- ADT - Algebraic Data-Type 
 -- data <Конструктор типа> = <Конструкторы данных>
@@ -654,25 +659,25 @@ debugOffset :: Int -> Int -> String
 debugOffset maxDepth depth = foldl (\r _ -> r ++ "  ") (show depth) [1..maxDepth - depth]
 
 alphaBetaSearch :: Board -> Int -> Color -> Move
-alphaBetaSearch board depth White = lastOfQuad $ alphaValue board depth White (-10000.0) 10000.0
-alphaBetaSearch board depth Black = lastOfQuad $ betaValue board depth Black (-10000.0) 10000.0
+alphaBetaSearch board depth White = lastOfQuad $ alphaValue board depth White 0.0000001 0 (-10000.0) 10000.0
+alphaBetaSearch board depth Black = lastOfQuad $ betaValue board depth Black  0 0.0000001 (-10000.0) 10000.0
 
-alphaValue :: Board -> Int -> Color -> Double -> Double -> (Double, Double, Double, Move)
-alphaValue board@(Board _ _ _ _ _ _ h _ _) depth player alpha beta
+alphaValue :: Board -> Int -> Color -> Double -> Double -> Double -> Double -> (Double, Double, Double, Move)
+alphaValue board@(Board _ _ _ _ _ _ h _ _) depth player wha bla alpha beta
     = if isMate board player || isDraw board player || depth == 0 then (alpha, beta, absEvalFn board, last h)
-        else (alpha' - 0.001, beta', v', best')
+        else (alpha' - 0.001, beta', v' - wha, best')
     where
-        (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then result else traceShow (debugOffset 5 depth, current) alphaHelper board depth player current best v a b) (alpha, beta, -999, head allMoves, False) allMoves
+        (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then result else traceShow (debugOffset 5 depth, current) alphaHelper board depth player current best v a b wha bla) (alpha, beta, -999, head allMoves, False) allMoves
         allMoves = allPossibleMoves board player
         --allMoves = traceShow (debugOffset 5 depth, allPossibleMoves board player) allPossibleMoves board player
 
-alphaHelper :: Board -> Int -> Color -> Move -> Move -> Double -> Double -> Double -> (Double, Double, Double, Move, Bool)
-alphaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta = traceShow (debugOffset 5 depth, alpha'', beta', v'', bestMove', break) (alpha'', beta', v'', bestMove', break)
+alphaHelper :: Board -> Int -> Color -> Move -> Move -> Double -> Double -> Double -> Double -> Double -> (Double, Double, Double, Move, Bool)
+alphaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta wha bla = traceShow (debugOffset 5 depth, alpha'', beta', v'', bestMove', break) (alpha'', beta', v'', bestMove', break)
     where
-        (alpha', beta', v', m') = betaValue (movePiece currentMove board) (depth - 1) (other player) alpha beta
+        (alpha', beta', v', m') = betaValue (movePiece currentMove board) (depth - 1) (other player) wha bla alpha beta
 
         (alpha'', v'', bestMove')
-            = if max v' v >= beta'
+            = if max v' v > beta'
                 then
                     if v' > v
                         then (alpha', v', currentMove)
@@ -685,23 +690,23 @@ alphaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v 
         break = v'' >= beta'
         --break = traceShow (debugOffset 5 depth, v'', ">=", beta') v'' >= beta'
 
-betaValue :: Board -> Int -> Color -> Double -> Double -> (Double, Double, Double, Move)
-betaValue board@(Board _ _ _ _ _ _ h _ _) depth player alpha beta
+betaValue :: Board -> Int -> Color -> Double -> Double -> Double -> Double -> (Double, Double, Double, Move)
+betaValue board@(Board _ _ _ _ _ _ h _ _) depth player wha bla alpha beta
     = if isMate board player || isDraw board player || depth == 0 then (alpha, beta, absEvalFn board, last h)
-        else (alpha', beta' + 0.001, v', best')
+        else (alpha', beta' + 0.001, v' + bla, best')
     where
-        (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then result else traceShow (debugOffset 5 depth, current) betaHelper board depth player current best v a b) (alpha, beta, 999, head allMoves, False) allMoves
+        (alpha', beta', v', best', _) = foldl (\result@(a, b, v, best, break) current -> if break then result else traceShow (debugOffset 5 depth, current) betaHelper board depth player current best v a b wha bla) (alpha, beta, 999, head allMoves, False) allMoves
         allMoves = allPossibleMoves board player
         --allMoves = traceShow (debugOffset 5 depth, allPossibleMoves board player) allPossibleMoves board player
 
-betaHelper :: Board -> Int ->  Color -> Move -> Move -> Double -> Double -> Double -> (Double, Double, Double, Move, Bool)
-betaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta = traceShow (debugOffset 5 depth, alpha', beta'', v'', bestMove', break)  (alpha', beta'', v'', bestMove', break)
+betaHelper :: Board -> Int ->  Color -> Move -> Move -> Double -> Double -> Double -> Double -> Double -> (Double, Double, Double, Move, Bool)
+betaHelper board@(Board _ _ _ _ _ _ h _ _) depth player currentMove bestMove v alpha beta wha bla = traceShow (debugOffset 5 depth, alpha', beta'', v'', bestMove', break) (alpha', beta'', v'', bestMove', break)
     where
-        (alpha', beta', v', m') = alphaValue (movePiece currentMove board) (depth - 1) (other player) alpha beta
+        (alpha', beta', v', m') = alphaValue (movePiece currentMove board) (depth - 1) (other player) wha bla alpha beta
         --(beta'', v'', bestMove') = if min v' v <= alpha' then (min beta' v', v', currentMove) else (beta', v, bestMove)
 
         (beta'', v'', bestMove')
-            = if min v' v <= alpha'
+            = if min v' v < alpha'
                 then
                     if v' < v
                         then (beta', v', currentMove)
@@ -787,17 +792,42 @@ importPiece 'K' color = Piece King color
 parseMove :: String -> Color -> Maybe Move
 parseMove [fromCol, '2', toCol, '4'] White
 
-    = Just (DoubleSquare (fromCol, 2) (toCol, 4))
+    = Just $ DoubleSquare (fromCol, 2) (toCol, 4)
 parseMove [fromCol, '7', toCol, '5'] Black
-    = Just (DoubleSquare (fromCol, 7) (toCol, 5))
-parseMove [fromCol, fromRow, toCol, toRow] color = Just (Move (Piece Pawn color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
+    = Just $ DoubleSquare (fromCol, 7) (toCol, 5)
+parseMove [fromCol, fromRow, toCol, toRow] color = Just $ Move (Piece Pawn color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
 parseMove [fromCol, fromRow, 'x', toCol, toRow, '=', piece] color
-    = Just (CapturePromotion (fromCol, digitToInt fromRow) (toCol, digitToInt toRow) (importPiece piece color))
-parseMove [fromCol, fromRow, 'x', toCol, toRow] color = Just (Capture (Piece Pawn color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
-parseMove [piece, fromCol, fromRow, 'x', toCol, toRow] color = Just (Capture (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
-parseMove [piece, fromCol, fromRow, toCol, toRow] color = Just (Move (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
-parseMove [piece, fromCol, fromRow, 'x', toCol, toRow] color = Just (Capture (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow))
-parseMove [fromCol, fromRow, toCol, toRow, '=', piece] color = Just (Promotion (fromCol, digitToInt fromRow) (toCol, digitToInt toRow) (importPiece piece color))
+    = Just $ CapturePromotion (fromCol, digitToInt fromRow) (toCol, digitToInt toRow) (importPiece piece color)
+parseMove [fromCol, fromRow, 'x', toCol, toRow] color = Just $ Capture (Piece Pawn color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
+parseMove [piece, fromCol, fromRow, 'x', toCol, toRow] color = Just $ Capture (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
+parseMove [piece, fromCol, fromRow, toCol, toRow] color = Just $ Move (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
+parseMove [piece, fromCol, fromRow, 'x', toCol, toRow] color = Just $ Capture (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
+parseMove [fromCol, fromRow, toCol, toRow, '=', piece] color = Just $ Promotion (fromCol, digitToInt fromRow) (toCol, digitToInt toRow) (importPiece piece color)
 parseMove "O-O-O" color = Just $ QueensideCastling color
 parseMove "O-O" color = Just $ KingsideCastling color
-parseMove _  _ = Nothing
+parseMove _ _ = Nothing
+
+parseMovePGN :: String -> Color -> Move
+parseMovePGN [fromCol, '2', toCol, '4'] White
+
+    = DoubleSquare (fromCol, 2) (toCol, 4)
+parseMovePGN [fromCol, '7', toCol, '5'] Black
+    = DoubleSquare (fromCol, 7) (toCol, 5)
+parseMovePGN [fromCol, fromRow, toCol, toRow] color = Move (Piece Pawn color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
+parseMovePGN [fromCol, fromRow, 'x', toCol, toRow, '=', piece] color
+    = CapturePromotion (fromCol, digitToInt fromRow) (toCol, digitToInt toRow) (importPiece piece color)
+parseMovePGN [fromCol, fromRow, 'x', toCol, toRow] color = Capture (Piece Pawn color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
+parseMovePGN [piece, fromCol, fromRow, 'x', toCol, toRow] color = Capture (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
+parseMovePGN [piece, fromCol, fromRow, toCol, toRow] color = Move (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
+parseMovePGN [piece, fromCol, fromRow, 'x', toCol, toRow] color = Capture (importPiece piece color) (fromCol, digitToInt fromRow) (toCol, digitToInt toRow)
+parseMovePGN [fromCol, fromRow, toCol, toRow, '=', piece] color = Promotion (fromCol, digitToInt fromRow) (toCol, digitToInt toRow) (importPiece piece color)
+parseMovePGN "O-O-O" color = QueensideCastling color
+parseMovePGN "O-O" color = KingsideCastling color
+
+splitMoves :: String -> [Text]
+splitMoves s = foldr (\(i, m) r -> if i `mod` 3 /= 0 then m : r else r) [] $ zip [0..] $ splitOn " " t
+    where t = pack s
+
+parseMoves :: [Text] -> Board -> Color -> Board
+parseMoves [] board _ = board
+parseMoves (m:moves) board color = parseMoves moves (movePiece (parseMovePGN (unpack m) color) board) (other color)

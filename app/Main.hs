@@ -1,15 +1,13 @@
 module Main where
 
-main = undefined
-
-{-
-import Bot.Minimax
 import Display
 import Core
 import Data.Char
 import GHC.Conc (threadDelay)
 import Bot.Human
 import Bot.Random
+import Bot.Minimax
+import Bot.Minimax (makeAlphaBetaMove)
 
 play bot1 bot2 board color = do
     let bot = if color == White then bot1 else bot2
@@ -39,4 +37,3 @@ main = do
     play bot1 bot2 initialBoard White
 
     return ()
--}
